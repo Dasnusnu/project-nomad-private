@@ -30,15 +30,14 @@ GREEN='\033[1;32m' # Light Green.
 
 WHIPTAIL_TITLE="Project N.O.M.A.D Installation"
 NOMAD_DIR="/opt/project-nomad"
-MANAGEMENT_COMPOSE_FILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/management_compose.yaml"
-ENTRYPOINT_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/entrypoint.sh"
-SIDECAR_UPDATER_DOCKERFILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/sidecar-updater/Dockerfile"
-SIDECAR_UPDATER_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/sidecar-updater/update-watcher.sh"
-START_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/start_nomad.sh"
-STOP_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/stop_nomad.sh"
-UPDATE_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/update_nomad.sh"
+
+# SCRIPT_DIR is the directory containing this script. When the repo is cloned
+# locally and the script is run from within it, all install/ files are available
+# here and no network downloads are needed (except wait-for-it, which is a
+# third-party script not included in this repository).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 WAIT_FOR_IT_SCRIPT_URL="https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh"
-COLLECT_DISK_INFO_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/collect_disk_info.sh"
 
 script_option_debug='true'
 accepted_terms='false'
@@ -390,12 +389,12 @@ create_disk_info_file() {
 download_management_compose_file() {
   local compose_file_path="${NOMAD_DIR}/compose.yml"
 
-  echo -e "${YELLOW}#${RESET} Downloading docker-compose file for management...\\n"
-  if ! curl -fsSL "$MANAGEMENT_COMPOSE_FILE_URL" -o "$compose_file_path"; then
-    echo -e "${RED}#${RESET} Failed to download the docker compose file. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying docker-compose file for management...\\n"
+  if ! cp "${SCRIPT_DIR}/management_compose.yaml" "$compose_file_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the docker compose file."
     exit 1
   fi
-  echo -e "${GREEN}#${RESET} Docker compose file downloaded successfully to $compose_file_path.\\n"
+  echo -e "${GREEN}#${RESET} Docker compose file copied successfully to $compose_file_path.\\n"
 
   local app_key=$(generateRandomPass)
   local db_root_password=$(generateRandomPass)
@@ -428,13 +427,13 @@ download_wait_for_it_script() {
 download_entrypoint_script() {
   local entrypoint_script_path="${NOMAD_DIR}/entrypoint.sh"
 
-  echo -e "${YELLOW}#${RESET} Downloading entrypoint script...\\n"
-  if ! curl -fsSL "$ENTRYPOINT_SCRIPT_URL" -o "$entrypoint_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the entrypoint script. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying entrypoint script...\\n"
+  if ! cp "${SCRIPT_DIR}/entrypoint.sh" "$entrypoint_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the entrypoint script."
     exit 1
   fi
   chmod +x "$entrypoint_script_path"
-  echo -e "${GREEN}#${RESET} entrypoint script downloaded successfully to $entrypoint_script_path.\\n"
+  echo -e "${GREEN}#${RESET} entrypoint script copied successfully to $entrypoint_script_path.\\n"
 }
 
 download_sidecar_files() {
@@ -447,32 +446,32 @@ download_sidecar_files() {
   local sidecar_dockerfile_path="${NOMAD_DIR}/sidecar-updater/Dockerfile"
   local sidecar_script_path="${NOMAD_DIR}/sidecar-updater/update-watcher.sh"
 
-  echo -e "${YELLOW}#${RESET} Downloading sidecar updater Dockerfile...\\n"
-  if ! curl -fsSL "$SIDECAR_UPDATER_DOCKERFILE_URL" -o "$sidecar_dockerfile_path"; then
-    echo -e "${RED}#${RESET} Failed to download the sidecar updater Dockerfile. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying sidecar updater Dockerfile...\\n"
+  if ! cp "${SCRIPT_DIR}/sidecar-updater/Dockerfile" "$sidecar_dockerfile_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the sidecar updater Dockerfile."
     exit 1
   fi
-  echo -e "${GREEN}#${RESET} Sidecar updater Dockerfile downloaded successfully to $sidecar_dockerfile_path.\\n"
+  echo -e "${GREEN}#${RESET} Sidecar updater Dockerfile copied successfully to $sidecar_dockerfile_path.\\n"
 
-  echo -e "${YELLOW}#${RESET} Downloading sidecar updater script...\\n"
-  if ! curl -fsSL "$SIDECAR_UPDATER_SCRIPT_URL" -o "$sidecar_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the sidecar updater script. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying sidecar updater script...\\n"
+  if ! cp "${SCRIPT_DIR}/sidecar-updater/update-watcher.sh" "$sidecar_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the sidecar updater script."
     exit 1
   fi
   chmod +x "$sidecar_script_path"
-  echo -e "${GREEN}#${RESET} Sidecar updater script downloaded successfully to $sidecar_script_path.\\n"
+  echo -e "${GREEN}#${RESET} Sidecar updater script copied successfully to $sidecar_script_path.\\n"
 }
 
 download_and_start_collect_disk_info_script() {
   local collect_disk_info_script_path="${NOMAD_DIR}/collect_disk_info.sh"
 
-  echo -e "${YELLOW}#${RESET} Downloading collect_disk_info script...\\n"
-  if ! curl -fsSL "$COLLECT_DISK_INFO_SCRIPT_URL" -o "$collect_disk_info_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the collect_disk_info script. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying collect_disk_info script...\\n"
+  if ! cp "${SCRIPT_DIR}/collect_disk_info.sh" "$collect_disk_info_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the collect_disk_info script."
     exit 1
   fi
   chmod +x "$collect_disk_info_script_path"
-  echo -e "${GREEN}#${RESET} collect_disk_info script downloaded successfully to $collect_disk_info_script_path.\\n"
+  echo -e "${GREEN}#${RESET} collect_disk_info script copied successfully to $collect_disk_info_script_path.\\n"
 
   # Ensure the disk info file exists as a regular file before starting the
   # background collector and before Docker mounts it. If the file is absent
@@ -492,26 +491,26 @@ download_helper_scripts() {
   local stop_script_path="${NOMAD_DIR}/stop_nomad.sh"
   local update_script_path="${NOMAD_DIR}/update_nomad.sh"
 
-  echo -e "${YELLOW}#${RESET} Downloading helper scripts...\\n"
-  if ! curl -fsSL "$START_SCRIPT_URL" -o "$start_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the start script. Please check the URL and try again."
+  echo -e "${YELLOW}#${RESET} Copying helper scripts...\\n"
+  if ! cp "${SCRIPT_DIR}/start_nomad.sh" "$start_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the start script."
     exit 1
   fi
   chmod +x "$start_script_path"
 
-  if ! curl -fsSL "$STOP_SCRIPT_URL" -o "$stop_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the stop script. Please check the URL and try again."
+  if ! cp "${SCRIPT_DIR}/stop_nomad.sh" "$stop_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the stop script."
     exit 1
   fi
   chmod +x "$stop_script_path"
 
-  if ! curl -fsSL "$UPDATE_SCRIPT_URL" -o "$update_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the update script. Please check the URL and try again."
+  if ! cp "${SCRIPT_DIR}/update_nomad.sh" "$update_script_path"; then
+    echo -e "${RED}#${RESET} Failed to copy the update script."
     exit 1
   fi
   chmod +x "$update_script_path"
 
-  echo -e "${GREEN}#${RESET} Helper scripts downloaded successfully to $start_script_path, $stop_script_path, and $update_script_path.\\n"
+  echo -e "${GREEN}#${RESET} Helper scripts copied successfully to $start_script_path, $stop_script_path, and $update_script_path.\\n"
 }
 
 start_management_containers() {
