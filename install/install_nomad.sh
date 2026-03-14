@@ -474,6 +474,12 @@ download_and_start_collect_disk_info_script() {
   chmod +x "$collect_disk_info_script_path"
   echo -e "${GREEN}#${RESET} collect_disk_info script downloaded successfully to $collect_disk_info_script_path.\\n"
 
+  # Ensure the disk info file exists as a regular file before starting the
+  # background collector and before Docker mounts it. If the file is absent
+  # when Docker evaluates the bind-mount, Docker creates a directory at that
+  # path instead, which causes the mount (and the app) to break silently.
+  create_disk_info_file
+
   # Start script in background and store PID for easy removal on uninstall
   echo -e "${YELLOW}#${RESET} Starting collect_disk_info script in the background...\\n"
   nohup bash "$collect_disk_info_script_path" > /dev/null 2>&1 &
