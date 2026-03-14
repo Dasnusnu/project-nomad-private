@@ -225,6 +225,16 @@ class API {
     })()
   }
 
+  async testOllamaConnection(url: string) {
+    return catchInternal(async () => {
+      const response = await this.client.post<{ success: boolean; message: string }>(
+        '/ollama/test-connection',
+        { url }
+      )
+      return response.data
+    })()
+  }
+
   async getAvailableModels(params: { query?: string; recommendedOnly?: boolean; limit?: number; force?: boolean }) {
     return catchInternal(async () => {
       const response = await this.client.get<{

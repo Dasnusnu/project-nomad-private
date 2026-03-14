@@ -2,7 +2,8 @@ import { ChatService } from '#services/chat_service'
 import { OllamaService } from '#services/ollama_service'
 import { RagService } from '#services/rag_service'
 import { modelNameSchema } from '#validators/download'
-import { chatSchema, getAvailableModelsSchema } from '#validators/ollama'
+import { chatSchema, getAvailableModelsSchema, testConnectionSchema } from '#validators/ollama'
+import { Ollama } from 'ollama'
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DEFAULT_QUERY_REWRITE_MODEL, RAG_CONTEXT_LIMITS, SYSTEM_PROMPTS } from '../../constants/ollama.js'
@@ -191,6 +192,20 @@ export default class OllamaController {
 
   async installedModels({ }: HttpContext) {
     return await this.ollamaService.getModels()
+  }
+
+  async testConnection({ request, response }: HttpContext) {
+    const { url } = await request.validateUsing(testConnectionSchema)
+    try {
+      const client = new Ollama({ host: url })
+      await client.list()
+      return response.ok({ success: true, message: 'Connection successful.' })
+    } catch (error) {
+      return response.ok({
+        success: false,
+        message: error instanceof Error ? error.message : 'Connection failed.',
+      })
+    }
   }
 
   /**

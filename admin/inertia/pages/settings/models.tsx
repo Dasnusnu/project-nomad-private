@@ -16,16 +16,18 @@ import Switch from '~/components/inputs/Switch'
 import StyledSectionHeader from '~/components/StyledSectionHeader'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import Input from '~/components/inputs/Input'
-import { IconSearch, IconRefresh } from '@tabler/icons-react'
+import { IconSearch, IconRefresh, IconPlugConnected, IconPlugConnectedX, IconCircleDashed } from '@tabler/icons-react'
 import useDebounce from '~/hooks/useDebounce'
 import ActiveModelDownloads from '~/components/ActiveModelDownloads'
 import { useSystemInfo } from '~/hooks/useSystemInfo'
+
+type ConnectionStatus = 'untested' | 'success' | 'error'
 
 export default function ModelsPage(props: {
   models: {
     availableModels: NomadOllamaModel[]
     installedModels: ModelResponse[]
-    settings: { chatSuggestionsEnabled: boolean; aiAssistantCustomName: string }
+    settings: { chatSuggestionsEnabled: boolean; aiAssistantCustomName: string; ollamaBaseUrl: string }
   }
 }) {
   const { aiAssistantName } = usePage<{ aiAssistantName: string }>().props
@@ -97,6 +99,44 @@ export default function ModelsPage(props: {
   const [aiAssistantCustomName, setAiAssistantCustomName] = useState(
     props.models.settings.aiAssistantCustomName
   )
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState(props.models.settings.ollamaBaseUrl)
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('untested')
+  const [connectionMessage, setConnectionMessage] = useState('')
+  const [isTesting, setIsTesting] = useState(false)
+
+  const hasCustomUrl = Boolean(props.models.settings.ollamaBaseUrl)
+
+  async function handleTestConnection() {
+    if (!ollamaBaseUrl) return
+    setIsTesting(true)
+    setConnectionStatus('untested')
+    try {
+      const res = await api.testOllamaConnection(ollamaBaseUrl)
+      if (res?.success) {
+        setConnectionStatus('success')
+        setConnectionMessage(res.message)
+      } else {
+        setConnectionStatus('error')
+        setConnectionMessage(res?.message || 'Connection failed.')
+      }
+    } catch {
+      setConnectionStatus('error')
+      setConnectionMessage('Connection failed.')
+    } finally {
+      setIsTesting(false)
+    }
+  }
+
+  async function handleSaveOllamaUrl() {
+    await updateSettingMutation.mutateAsync({ key: 'ai.ollamaBaseUrl', value: ollamaBaseUrl })
+  }
+
+  async function handleClearOllamaUrl() {
+    setOllamaBaseUrl('')
+    setConnectionStatus('untested')
+    setConnectionMessage('')
+    await updateSettingMutation.mutateAsync({ key: 'ai.ollamaBaseUrl', value: '' })
+  }
 
   const [query, setQuery] = useState('')
   const [queryUI, setQueryUI] = useState('')
@@ -229,9 +269,9 @@ export default function ModelsPage(props: {
             starting with smaller models first to see how they perform on your system before moving
             on to larger ones.
           </p>
-          {!isInstalled && (
+          {!isInstalled && !hasCustomUrl && (
             <Alert
-              title={`${aiAssistantName}'s dependencies are not installed. Please install them to manage AI models.`}
+              title={`${aiAssistantName}'s dependencies are not installed. Please install them to manage AI models, or configure a remote Ollama instance below.`}
               type="warning"
               variant="solid"
               className="!mt-6"
@@ -286,6 +326,81 @@ export default function ModelsPage(props: {
               />
             </div>
           </div>
+
+          <StyledSectionHeader title="Remote Ollama Instance" className="mt-8 mb-4" />
+          <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+            <p className="text-sm text-gray-500 mb-4">
+              Connect {aiAssistantName} to an Ollama server running on another machine. When set,
+              all AI requests — including chat, RAG embeddings, and model management — are routed to
+              the remote instance. Leave blank to use the locally installed Ollama service.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-end gap-3">
+                <Input
+                  name="ollamaBaseUrl"
+                  label="Ollama Base URL"
+                  helpText="Include the protocol and port, e.g. http://192.168.1.50:11434"
+                  placeholder="http://192.168.1.50:11434"
+                  value={ollamaBaseUrl}
+                  onChange={(e) => {
+                    setOllamaBaseUrl(e.target.value)
+                    setConnectionStatus('untested')
+                    setConnectionMessage('')
+                  }}
+                  className="flex-1"
+                />
+                <StyledButton
+                  variant="secondary"
+                  onClick={handleTestConnection}
+                  loading={isTesting}
+                  disabled={!ollamaBaseUrl || isTesting}
+                  className="mb-px"
+                >
+                  Test
+                </StyledButton>
+              </div>
+
+              {connectionStatus !== 'untested' && (
+                <div
+                  className={`flex items-center gap-2 text-sm font-medium ${connectionStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {connectionStatus === 'success' ? (
+                    <IconPlugConnected className="w-4 h-4" />
+                  ) : (
+                    <IconPlugConnectedX className="w-4 h-4" />
+                  )}
+                  {connectionMessage}
+                </div>
+              )}
+              {connectionStatus === 'untested' && ollamaBaseUrl && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <IconCircleDashed className="w-4 h-4" />
+                  Not yet tested
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <StyledButton
+                  variant="primary"
+                  onClick={handleSaveOllamaUrl}
+                  disabled={!ollamaBaseUrl}
+                  loading={updateSettingMutation.isPending}
+                >
+                  Save
+                </StyledButton>
+                {hasCustomUrl && (
+                  <StyledButton
+                    variant="secondary"
+                    onClick={handleClearOllamaUrl}
+                    loading={updateSettingMutation.isPending}
+                  >
+                    Use local Ollama
+                  </StyledButton>
+                )}
+              </div>
+            </div>
+          </div>
+
           <ActiveModelDownloads withHeader />
 
           <StyledSectionHeader title="Models" className="mt-12 mb-4" />

@@ -13,6 +13,7 @@ import Fuse, { IFuseOptions } from 'fuse.js'
 import { BROADCAST_CHANNELS } from '../../constants/broadcast.js'
 import env from '#start/env'
 import { NOMAD_API_DEFAULT_BASE_URL } from '../../constants/misc.js'
+import KVStore from '#models/kv_store'
 
 const NOMAD_MODELS_API_PATH = '/api/v1/ollama/models'
 const MODELS_CACHE_FILE = path.join(process.cwd(), 'storage', 'ollama-models-cache.json')
@@ -21,27 +22,29 @@ const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 @inject()
 export class OllamaService {
   private ollama: Ollama | null = null
-  private ollamaInitPromise: Promise<void> | null = null
+  private ollamaHost: string | null = null
 
   constructor() { }
 
-  private async _initializeOllamaClient() {
-    if (!this.ollamaInitPromise) {
-      this.ollamaInitPromise = (async () => {
-        const dockerService = new (await import('./docker_service.js')).DockerService()
-        const qdrantUrl = await dockerService.getServiceURL(SERVICE_NAMES.OLLAMA)
-        if (!qdrantUrl) {
-          throw new Error('Ollama service is not installed or running.')
-        }
-        this.ollama = new Ollama({ host: qdrantUrl })
-      })()
+  private async _resolveOllamaHost(): Promise<string> {
+    const customUrl = await KVStore.getValue('ai.ollamaBaseUrl')
+    if (customUrl) {
+      return customUrl
     }
-    return this.ollamaInitPromise
+    const dockerService = new (await import('./docker_service.js')).DockerService()
+    const dockerUrl = await dockerService.getServiceURL(SERVICE_NAMES.OLLAMA)
+    if (!dockerUrl) {
+      throw new Error('Ollama service is not installed or running.')
+    }
+    return dockerUrl
   }
 
   private async _ensureDependencies() {
-    if (!this.ollama) {
-      await this._initializeOllamaClient()
+    const targetHost = await this._resolveOllamaHost()
+    if (!this.ollama || this.ollamaHost !== targetHost) {
+      this.ollama = new Ollama({ host: targetHost })
+      this.ollamaHost = targetHost
+      logger.debug(`[OllamaService] Client initialised with host: ${targetHost}`)
     }
   }
 
