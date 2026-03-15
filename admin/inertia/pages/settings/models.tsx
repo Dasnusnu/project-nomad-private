@@ -298,35 +298,6 @@ export default function ModelsPage(props: {
             />
           )}
 
-          <StyledSectionHeader title="Settings" className="mt-8 mb-4" />
-          <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-            <div className="space-y-4">
-              <Switch
-                checked={chatSuggestionsEnabled}
-                onChange={(newVal) => {
-                  setChatSuggestionsEnabled(newVal)
-                  updateSettingMutation.mutate({ key: 'chat.suggestionsEnabled', value: newVal })
-                }}
-                label="Chat Suggestions"
-                description="Display AI-generated conversation starters in the chat interface"
-              />
-              <Input
-                name="aiAssistantCustomName"
-                label="Assistant Name"
-                helpText='Give your AI assistant a custom name that will be used in the chat interface and other areas of the application.'
-                placeholder="AI Assistant"
-                value={aiAssistantCustomName}
-                onChange={(e) => setAiAssistantCustomName(e.target.value)}
-                onBlur={() =>
-                  updateSettingMutation.mutate({
-                    key: 'ai.assistantCustomName',
-                    value: aiAssistantCustomName,
-                  })
-                }
-              />
-            </div>
-          </div>
-
           <StyledSectionHeader title="Remote Ollama Instance" className="mt-8 mb-4" />
           <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
             <p className="text-sm text-gray-500 mb-4">
@@ -398,6 +369,35 @@ export default function ModelsPage(props: {
                   </StyledButton>
                 )}
               </div>
+            </div>
+          </div>
+
+          <StyledSectionHeader title="Settings" className="mt-8 mb-4" />
+          <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+            <div className="space-y-4">
+              <Switch
+                checked={chatSuggestionsEnabled}
+                onChange={(newVal) => {
+                  setChatSuggestionsEnabled(newVal)
+                  updateSettingMutation.mutate({ key: 'chat.suggestionsEnabled', value: newVal })
+                }}
+                label="Chat Suggestions"
+                description="Display AI-generated conversation starters in the chat interface"
+              />
+              <Input
+                name="aiAssistantCustomName"
+                label="Assistant Name"
+                helpText='Give your AI assistant a custom name that will be used in the chat interface and other areas of the application.'
+                placeholder="AI Assistant"
+                value={aiAssistantCustomName}
+                onChange={(e) => setAiAssistantCustomName(e.target.value)}
+                onBlur={() =>
+                  updateSettingMutation.mutate({
+                    key: 'ai.assistantCustomName',
+                    value: aiAssistantCustomName,
+                  })
+                }
+              />
             </div>
           </div>
 
