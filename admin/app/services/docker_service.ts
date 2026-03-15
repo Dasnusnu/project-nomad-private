@@ -478,13 +478,35 @@ export class DockerService {
           this._broadcast(
             service.service_name,
             'gpu-config',
-            `AMD GPU detected. ROCm GPU acceleration is not yet supported in this version — proceeding with CPU-only configuration. GPU support for AMD will be available in a future update.`
+            `AMD GPU detected. Configuring container with ROCm GPU acceleration...`
           )
-          logger.warn('[DockerService] AMD GPU detected but ROCm support is not yet enabled. Using CPU-only configuration.')
-          // TODO: Re-enable AMD GPU support once ROCm image and device discovery are validated.
-          // When re-enabling:
-          //   1. Switch image to 'ollama/ollama:rocm'
-          //   2. Restore _discoverAMDDevices() to map /dev/kfd and /dev/dri/* into the container
+
+          finalImage = 'ollama/ollama:rocm'
+          const amdDevices = await this._discoverAMDDevices()
+          gpuHostConfig = {
+            ...gpuHostConfig,
+            Devices: amdDevices,
+          }
+        } else if (gpuResult.type === 'intel') {
+          this._broadcast(
+            service.service_name,
+            'gpu-config',
+            `Intel GPU detected. Configuring container with Intel GPU acceleration...`
+          )
+
+          const intelDevices = await this._discoverIntelDevices()
+          gpuHostConfig = {
+            ...gpuHostConfig,
+            Devices: intelDevices,
+          }
+          // Inject ONEAPI_DEVICE_SELECTOR so Ollama picks up the Intel GPU via Level Zero
+          const existingEnv: string[] = (containerConfig?.Env as string[]) ?? []
+          if (!existingEnv.includes('ONEAPI_DEVICE_SELECTOR=level_zero:0')) {
+            containerConfig = {
+              ...containerConfig,
+              Env: [...existingEnv, 'ONEAPI_DEVICE_SELECTOR=level_zero:0'],
+            }
+          }
         } else if (gpuResult.toolkitMissing) {
           this._broadcast(
             service.service_name,
@@ -683,7 +705,7 @@ export class DockerService {
    * Primary: Check Docker runtimes via docker.info() (works from inside containers).
    * Fallback: lspci for host-based installs and AMD detection.
    */
-  private async _detectGPUType(): Promise<{ type: 'nvidia' | 'amd' | 'none'; toolkitMissing?: boolean }> {
+  private async _detectGPUType(): Promise<{ type: 'nvidia' | 'amd' | 'intel' | 'none'; toolkitMissing?: boolean }> {
     try {
       // Primary: Check Docker daemon for nvidia runtime (works from inside containers)
       try {
@@ -728,6 +750,19 @@ export class DockerService {
         // lspci not available, continue
       }
 
+      // Check for Intel discrete or integrated GPU via lspci
+      try {
+        const { stdout: intelCheck } = await execAsync(
+          'lspci 2>/dev/null | grep -iE "VGA|3D controller|Display" | grep -i intel || true'
+        )
+        if (intelCheck.trim()) {
+          logger.info('[DockerService] Intel GPU detected via lspci')
+          return { type: 'intel' }
+        }
+      } catch (error) {
+        // lspci not available, continue
+      }
+
       logger.info('[DockerService] No GPU detected')
       return { type: 'none' }
     } catch (error) {
@@ -739,58 +774,104 @@ export class DockerService {
   /**
    * Discover AMD GPU DRI devices dynamically.
    * Returns an array of device configurations for Docker.
+   * AMD ROCm requires /dev/kfd and all /dev/dri/* devices.
    */
-  // private async _discoverAMDDevices(): Promise<
-  //   Array<{ PathOnHost: string; PathInContainer: string; CgroupPermissions: string }>
-  // > {
-  //   try {
-  //     const devices: Array<{
-  //       PathOnHost: string
-  //       PathInContainer: string
-  //       CgroupPermissions: string
-  //     }> = []
+  private async _discoverAMDDevices(): Promise<
+    Array<{ PathOnHost: string; PathInContainer: string; CgroupPermissions: string }>
+  > {
+    try {
+      const devices: Array<{
+        PathOnHost: string
+        PathInContainer: string
+        CgroupPermissions: string
+      }> = []
 
-  //     // Always add /dev/kfd (Kernel Fusion Driver)
-  //     devices.push({
-  //       PathOnHost: '/dev/kfd',
-  //       PathInContainer: '/dev/kfd',
-  //       CgroupPermissions: 'rwm',
-  //     })
+      // Always add /dev/kfd (Kernel Fusion Driver)
+      devices.push({
+        PathOnHost: '/dev/kfd',
+        PathInContainer: '/dev/kfd',
+        CgroupPermissions: 'rwm',
+      })
 
-  //     // Discover DRI devices in /dev/dri/
-  //     try {
-  //       const driDevices = await readdir('/dev/dri')
-  //       for (const device of driDevices) {
-  //         const devicePath = `/dev/dri/${device}`
-  //         devices.push({
-  //           PathOnHost: devicePath,
-  //           PathInContainer: devicePath,
-  //           CgroupPermissions: 'rwm',
-  //         })
-  //       }
-  //       logger.info(
-  //         `[DockerService] Discovered ${driDevices.length} DRI devices: ${driDevices.join(', ')}`
-  //       )
-  //     } catch (error) {
-  //       logger.warn(`[DockerService] Could not read /dev/dri directory: ${error.message}`)
-  //       // Fallback to common device names if directory read fails
-  //       const fallbackDevices = ['card0', 'renderD128']
-  //       for (const device of fallbackDevices) {
-  //         devices.push({
-  //           PathOnHost: `/dev/dri/${device}`,
-  //           PathInContainer: `/dev/dri/${device}`,
-  //           CgroupPermissions: 'rwm',
-  //         })
-  //       }
-  //       logger.info(`[DockerService] Using fallback DRI devices: ${fallbackDevices.join(', ')}`)
-  //     }
+      // Discover DRI devices in /dev/dri/
+      try {
+        const driDevices = await readdir('/dev/dri')
+        for (const device of driDevices) {
+          const devicePath = `/dev/dri/${device}`
+          devices.push({
+            PathOnHost: devicePath,
+            PathInContainer: devicePath,
+            CgroupPermissions: 'rwm',
+          })
+        }
+        logger.info(
+          `[DockerService] Discovered ${driDevices.length} DRI devices: ${driDevices.join(', ')}`
+        )
+      } catch (error) {
+        logger.warn(`[DockerService] Could not read /dev/dri directory: ${error.message}`)
+        // Fallback to common device names if directory read fails
+        const fallbackDevices = ['card0', 'renderD128']
+        for (const device of fallbackDevices) {
+          devices.push({
+            PathOnHost: `/dev/dri/${device}`,
+            PathInContainer: `/dev/dri/${device}`,
+            CgroupPermissions: 'rwm',
+          })
+        }
+        logger.info(`[DockerService] Using fallback DRI devices: ${fallbackDevices.join(', ')}`)
+      }
 
-  //     return devices
-  //   } catch (error) {
-  //     logger.error(`[DockerService] Error discovering AMD devices: ${error.message}`)
-  //     return []
-  //   }
-  // }
+      return devices
+    } catch (error) {
+      logger.error(`[DockerService] Error discovering AMD devices: ${error.message}`)
+      return []
+    }
+  }
+
+  /**
+   * Discover Intel GPU DRI render nodes dynamically.
+   * Intel GPU acceleration uses /dev/dri/renderD* nodes only (no /dev/kfd needed).
+   */
+  private async _discoverIntelDevices(): Promise<
+    Array<{ PathOnHost: string; PathInContainer: string; CgroupPermissions: string }>
+  > {
+    try {
+      const devices: Array<{
+        PathOnHost: string
+        PathInContainer: string
+        CgroupPermissions: string
+      }> = []
+
+      try {
+        const driDevices = await readdir('/dev/dri')
+        for (const device of driDevices) {
+          const devicePath = `/dev/dri/${device}`
+          devices.push({
+            PathOnHost: devicePath,
+            PathInContainer: devicePath,
+            CgroupPermissions: 'rwm',
+          })
+        }
+        logger.info(
+          `[DockerService] Discovered ${driDevices.length} Intel DRI devices: ${driDevices.join(', ')}`
+        )
+      } catch (error) {
+        logger.warn(`[DockerService] Could not read /dev/dri directory: ${error.message}`)
+        // Fallback to the most common Intel render node
+        devices.push({
+          PathOnHost: '/dev/dri/renderD128',
+          PathInContainer: '/dev/dri/renderD128',
+          CgroupPermissions: 'rwm',
+        })
+        logger.info('[DockerService] Using fallback Intel DRI device: renderD128')
+      }
+
+      return devices
+    } catch (error) {
+      logger.error(`[DockerService] Error discovering Intel devices: ${error.message}`)
+      return []
+    }
+  }
 
   /**
    * Update a service container to a new image version while preserving volumes and data.

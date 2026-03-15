@@ -263,11 +263,12 @@ export class SystemService {
         }
 
         // If si.graphics() returned no controllers (common inside Docker),
-        // fall back to nvidia runtime + nvidia-smi detection
+        // fall back to runtime/device-based detection
         if (!graphics.controllers || graphics.controllers.length === 0) {
           const runtimes = dockerInfo.Runtimes || {}
           if ('nvidia' in runtimes) {
             gpuHealth.hasNvidiaRuntime = true
+            gpuHealth.gpuVendor = 'nvidia'
             const nvidiaInfo = await this.getNvidiaSmiInfo()
             if (Array.isArray(nvidiaInfo)) {
               graphics.controllers = nvidiaInfo.map((gpu) => ({
@@ -285,11 +286,47 @@ export class SystemService {
               gpuHealth.status = 'passthrough_failed'
               logger.warn(`NVIDIA runtime detected but GPU passthrough failed: ${typeof nvidiaInfo === 'string' ? nvidiaInfo : JSON.stringify(nvidiaInfo)}`)
             }
+          } else {
+            // Check for AMD or Intel via /dev/kfd and /dev/dri presence inside the Ollama container
+            try {
+              const ollamaContainer = await this.dockerService.docker.getContainer('ollama')
+              const ollamaInspect = await ollamaContainer.inspect()
+              const containerDevices: Array<{ PathOnHost: string }> =
+                ollamaInspect.HostConfig?.Devices ?? []
+              const devicePaths = containerDevices.map((d) => d.PathOnHost)
+
+              const hasKfd = devicePaths.some((p) => p === '/dev/kfd')
+              const hasDri = devicePaths.some((p) => p.startsWith('/dev/dri'))
+
+              if (hasKfd && hasDri) {
+                gpuHealth.gpuVendor = 'amd'
+                gpuHealth.status = 'ok'
+                gpuHealth.ollamaGpuAccessible = true
+              } else if (hasDri) {
+                gpuHealth.gpuVendor = 'intel'
+                gpuHealth.status = 'ok'
+                gpuHealth.ollamaGpuAccessible = true
+              }
+            } catch {
+              // Ollama container not found or inspect failed — no GPU accessible
+            }
           }
         } else {
           // si.graphics() returned controllers (host install, not Docker) — GPU is working
           gpuHealth.status = 'ok'
           gpuHealth.ollamaGpuAccessible = true
+
+          // Best-effort vendor detection from controller names
+          const firstController = graphics.controllers[0]
+          const modelLower = (firstController?.model ?? '').toLowerCase()
+          const vendorLower = (firstController?.vendor ?? '').toLowerCase()
+          if (modelLower.includes('nvidia') || vendorLower.includes('nvidia')) {
+            gpuHealth.gpuVendor = 'nvidia'
+          } else if (modelLower.includes('amd') || modelLower.includes('radeon') || vendorLower.includes('amd')) {
+            gpuHealth.gpuVendor = 'amd'
+          } else if (modelLower.includes('intel') || vendorLower.includes('intel')) {
+            gpuHealth.gpuVendor = 'intel'
+          }
         }
       } catch {
         // Docker info query failed, skip host-level enrichment
