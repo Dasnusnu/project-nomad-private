@@ -16,6 +16,27 @@ echo ""
 
 for container in $containers; do
     echo "Starting container: $container"
+
+    # Check if any network the container is connected to no longer exists.
+    # This happens when the project-nomad compose stack was recreated (compose
+    # down + up), which gives the default network a new ID while stopped
+    # service containers still reference the old ID.
+    stale_network=false
+    while IFS= read -r net_id; do
+        if ! docker network inspect "$net_id" > /dev/null 2>&1; then
+            echo "  ⚠ Container references missing network $net_id — removing stale container so it can be recreated."
+            docker rm "$container"
+            stale_network=true
+            break
+        fi
+    done < <(docker inspect "$container" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$v.NetworkID}}{{"\n"}}{{end}}' 2>/dev/null)
+
+    if $stale_network; then
+        echo "✗ Removed stale $container (reinstall the service through the UI to recreate it)"
+        echo ""
+        continue
+    fi
+
     if docker start "$container"; then
         echo "✓ Successfully started $container"
     else
