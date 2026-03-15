@@ -1,43 +1,62 @@
 #!/bin/bash
 
-echo "Finding Project N.O.M.A.D containers..."
+NOMAD_DIR="/opt/project-nomad"
+MANAGEMENT_COMPOSE_FILE="${NOMAD_DIR}/compose.yml"
 
-# -a to include all containers (running and stopped)
-containers=$(docker ps -a --filter "name=^nomad_" --format "{{.Names}}")
+# Management containers are owned by the compose stack and must be
+# started/recreated via compose, not via docker start.
+MANAGEMENT_CONTAINERS=("nomad_admin" "nomad_mysql" "nomad_redis" "nomad_dozzle" "nomad_updater")
 
-if [ -z "$containers" ]; then
-    echo "No containers found for Project N.O.M.A.D. Is it installed?"
-    exit 0
-fi
+is_management_container() {
+    local name="$1"
+    for mc in "${MANAGEMENT_CONTAINERS[@]}"; do
+        [[ "$mc" == "$name" ]] && return 0
+    done
+    return 1
+}
 
-echo "Found the following containers:"
-echo "$containers"
-echo ""
-
-for container in $containers; do
-    echo "Starting container: $container"
-
-    # Check if any network the container is connected to no longer exists.
-    # This happens when the project-nomad compose stack was recreated (compose
-    # down + up), which gives the default network a new ID while stopped
-    # service containers still reference the old ID.
-    stale_network=false
+has_stale_network() {
+    local container="$1"
     while IFS= read -r net_id; do
+        [[ -z "$net_id" ]] && continue
         if ! docker network inspect "$net_id" > /dev/null 2>&1; then
-            echo "  ⚠ Container references missing network $net_id — removing stale container so it can be recreated."
-            docker rm "$container"
-            stale_network=true
-            break
+            return 0
         fi
     done < <(docker inspect "$container" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$v.NetworkID}}{{"\n"}}{{end}}' 2>/dev/null)
+    return 1
+}
 
-    if $stale_network; then
-        echo "✗ Removed stale $container (reinstall the service through the UI to recreate it)"
-        echo ""
-        continue
+# ── Step 1: bring up the management stack via compose ─────────────────────────
+# compose up -d handles network (re)creation automatically, so management
+# containers always come up cleanly regardless of stale network state.
+if [[ -f "$MANAGEMENT_COMPOSE_FILE" ]]; then
+    echo "Starting management containers via compose..."
+    if docker compose -p project-nomad -f "$MANAGEMENT_COMPOSE_FILE" up -d; then
+        echo "✓ Management containers started."
+    else
+        echo "✗ Failed to start management containers."
     fi
+else
+    echo "⚠ Management compose file not found at $MANAGEMENT_COMPOSE_FILE — skipping."
+fi
 
-    if docker start "$container"; then
+echo ""
+
+# ── Step 2: start remaining service containers (e.g. nomad_ollama) ────────────
+service_containers=$(docker ps -a --filter "name=^nomad_" --format "{{.Names}}")
+
+started_any=false
+for container in $service_containers; do
+    is_management_container "$container" && continue
+
+    started_any=true
+    echo "Starting service container: $container"
+
+    if has_stale_network "$container"; then
+        echo "  ⚠ Stale network reference detected — removing so it can be reinstalled."
+        docker rm "$container"
+        echo "✗ Removed stale $container (reinstall the service through the UI to recreate it)"
+    elif docker start "$container"; then
         echo "✓ Successfully started $container"
     else
         echo "✗ Failed to start $container"
@@ -45,4 +64,8 @@ for container in $containers; do
     echo ""
 done
 
-echo "Finished initiating start of all Project N.O.M.A.D containers."
+if ! $started_any; then
+    echo "No additional service containers found."
+fi
+
+echo "Finished starting Project N.O.M.A.D containers."
