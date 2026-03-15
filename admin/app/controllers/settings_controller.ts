@@ -2,10 +2,12 @@ import KVStore from '#models/kv_store';
 import { BenchmarkService } from '#services/benchmark_service';
 import { MapService } from '#services/map_service';
 import { OllamaService } from '#services/ollama_service';
+import { RagService } from '#services/rag_service';
 import { SystemService } from '#services/system_service';
 import { updateSettingSchema } from '#validators/settings';
 import { inject } from '@adonisjs/core';
 import type { HttpContext } from '@adonisjs/core/http'
+import logger from '@adonisjs/core/services/logger'
 import type { KVStoreKey } from '../../types/kv_store.js';
 
 @inject()
@@ -14,7 +16,8 @@ export default class SettingsController {
         private systemService: SystemService,
         private mapService: MapService,
         private benchmarkService: BenchmarkService,
-        private ollamaService: OllamaService
+        private ollamaService: OllamaService,
+        private ragService: RagService
     ) { }
 
     async system({ inertia }: HttpContext) {
@@ -109,6 +112,21 @@ export default class SettingsController {
     async updateSetting({ request, response }: HttpContext) {
         const reqData = await request.validateUsing(updateSettingSchema);
         await this.systemService.updateSetting(reqData.key, reqData.value);
+
+        // When a remote Ollama URL is saved, trigger RAG doc discovery if docs have not
+        // been embedded yet. This handles the case where a user configures a remote
+        // Ollama instance without ever installing the local Ollama container (which is
+        // the normal trigger for discoverNomadDocs).
+        if (reqData.key === 'ai.ollamaBaseUrl' && reqData.value) {
+            const alreadyEmbedded = await KVStore.getValue('rag.docsEmbedded')
+            if (!alreadyEmbedded) {
+                logger.info('[SettingsController] Remote Ollama URL saved and docs not yet embedded — triggering RAG discovery')
+                this.ragService.discoverNomadDocs().catch((err) => {
+                    logger.error('[SettingsController] RAG discovery triggered by remote URL save failed:', err)
+                })
+            }
+        }
+
         return response.status(200).send({ success: true, message: 'Setting updated successfully' });
     }
 }
