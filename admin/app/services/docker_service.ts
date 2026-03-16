@@ -902,10 +902,15 @@ export class DockerService {
         : currentImage
       const newImage = `${imageBase}:${targetVersion}`
 
-      // Step 1: Pull new image
-      this._broadcast(serviceName, 'update-pulling', `Pulling image ${newImage}...`)
-      const pullStream = await this.docker.pull(newImage)
-      await new Promise((res) => this.docker.modem.followProgress(pullStream, res))
+      // Step 1: Pull new image (skip if already present locally, e.g. custom/pre-loaded image)
+      const newImageExists = await this._checkImageExists(newImage)
+      if (newImageExists) {
+        this._broadcast(serviceName, 'update-pulling', `Image ${newImage} already exists locally. Skipping pull...`)
+      } else {
+        this._broadcast(serviceName, 'update-pulling', `Pulling image ${newImage}...`)
+        const pullStream = await this.docker.pull(newImage)
+        await new Promise((res) => this.docker.modem.followProgress(pullStream, res))
+      }
 
       // Step 2: Find and stop existing container
       this._broadcast(serviceName, 'update-stopping', `Stopping current container...`)
