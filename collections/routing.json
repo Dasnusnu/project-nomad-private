@@ -1,0 +1,460 @@
+{
+  "spec_version": "2026-03-16",
+  "description": "OSM PBF routing data for Valhalla offline turn-by-turn directions. Place downloaded files in /storage/valhalla/ — Valhalla automatically builds its routing graph on first start.",
+  "collections": [
+    {
+      "name": "Pacific Region",
+      "slug": "pacific",
+      "description": "Routing data for the Pacific region — Alaska, California, Hawaii, Oregon, Washington.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "alaska-routing",
+          "version": "latest",
+          "title": "Alaska",
+          "description": "Road network routing data for Alaska.",
+          "url": "https://download.geofabrik.de/north-america/us/alaska-latest.osm.pbf",
+          "size_mb": 90
+        },
+        {
+          "id": "california-routing",
+          "version": "latest",
+          "title": "California",
+          "description": "Road network routing data for California.",
+          "url": "https://download.geofabrik.de/north-america/us/california-latest.osm.pbf",
+          "size_mb": 960
+        },
+        {
+          "id": "hawaii-routing",
+          "version": "latest",
+          "title": "Hawaii",
+          "description": "Road network routing data for Hawaii.",
+          "url": "https://download.geofabrik.de/north-america/us/hawaii-latest.osm.pbf",
+          "size_mb": 25
+        },
+        {
+          "id": "oregon-routing",
+          "version": "latest",
+          "title": "Oregon",
+          "description": "Road network routing data for Oregon.",
+          "url": "https://download.geofabrik.de/north-america/us/oregon-latest.osm.pbf",
+          "size_mb": 200
+        },
+        {
+          "id": "washington-routing",
+          "version": "latest",
+          "title": "Washington",
+          "description": "Road network routing data for Washington.",
+          "url": "https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf",
+          "size_mb": 280
+        }
+      ]
+    },
+    {
+      "name": "Mountain Region",
+      "slug": "mountain",
+      "description": "Routing data for the Mountain region — Arizona, Colorado, Idaho, Montana, Nevada, New Mexico, Utah, Wyoming.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "arizona-routing",
+          "version": "latest",
+          "title": "Arizona",
+          "description": "Road network routing data for Arizona.",
+          "url": "https://download.geofabrik.de/north-america/us/arizona-latest.osm.pbf",
+          "size_mb": 190
+        },
+        {
+          "id": "colorado-routing",
+          "version": "latest",
+          "title": "Colorado",
+          "description": "Road network routing data for Colorado.",
+          "url": "https://download.geofabrik.de/north-america/us/colorado-latest.osm.pbf",
+          "size_mb": 230
+        },
+        {
+          "id": "idaho-routing",
+          "version": "latest",
+          "title": "Idaho",
+          "description": "Road network routing data for Idaho.",
+          "url": "https://download.geofabrik.de/north-america/us/idaho-latest.osm.pbf",
+          "size_mb": 110
+        },
+        {
+          "id": "montana-routing",
+          "version": "latest",
+          "title": "Montana",
+          "description": "Road network routing data for Montana.",
+          "url": "https://download.geofabrik.de/north-america/us/montana-latest.osm.pbf",
+          "size_mb": 130
+        },
+        {
+          "id": "nevada-routing",
+          "version": "latest",
+          "title": "Nevada",
+          "description": "Road network routing data for Nevada.",
+          "url": "https://download.geofabrik.de/north-america/us/nevada-latest.osm.pbf",
+          "size_mb": 120
+        },
+        {
+          "id": "new-mexico-routing",
+          "version": "latest",
+          "title": "New Mexico",
+          "description": "Road network routing data for New Mexico.",
+          "url": "https://download.geofabrik.de/north-america/us/new-mexico-latest.osm.pbf",
+          "size_mb": 120
+        },
+        {
+          "id": "utah-routing",
+          "version": "latest",
+          "title": "Utah",
+          "description": "Road network routing data for Utah.",
+          "url": "https://download.geofabrik.de/north-america/us/utah-latest.osm.pbf",
+          "size_mb": 150
+        },
+        {
+          "id": "wyoming-routing",
+          "version": "latest",
+          "title": "Wyoming",
+          "description": "Road network routing data for Wyoming.",
+          "url": "https://download.geofabrik.de/north-america/us/wyoming-latest.osm.pbf",
+          "size_mb": 85
+        }
+      ]
+    },
+    {
+      "name": "South Central Region",
+      "slug": "south-central",
+      "description": "Routing data for the South Central region — Arkansas, Louisiana, Oklahoma, Texas.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "arkansas-routing",
+          "version": "latest",
+          "title": "Arkansas",
+          "description": "Road network routing data for Arkansas.",
+          "url": "https://download.geofabrik.de/north-america/us/arkansas-latest.osm.pbf",
+          "size_mb": 90
+        },
+        {
+          "id": "louisiana-routing",
+          "version": "latest",
+          "title": "Louisiana",
+          "description": "Road network routing data for Louisiana.",
+          "url": "https://download.geofabrik.de/north-america/us/louisiana-latest.osm.pbf",
+          "size_mb": 110
+        },
+        {
+          "id": "oklahoma-routing",
+          "version": "latest",
+          "title": "Oklahoma",
+          "description": "Road network routing data for Oklahoma.",
+          "url": "https://download.geofabrik.de/north-america/us/oklahoma-latest.osm.pbf",
+          "size_mb": 125
+        },
+        {
+          "id": "texas-routing",
+          "version": "latest",
+          "title": "Texas",
+          "description": "Road network routing data for Texas.",
+          "url": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
+          "size_mb": 770
+        }
+      ]
+    },
+    {
+      "name": "Southeast Region",
+      "slug": "southeast",
+      "description": "Routing data for the Southeast region — Alabama, Florida, Georgia, Mississippi, North Carolina, South Carolina, Tennessee, Virginia.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "alabama-routing",
+          "version": "latest",
+          "title": "Alabama",
+          "description": "Road network routing data for Alabama.",
+          "url": "https://download.geofabrik.de/north-america/us/alabama-latest.osm.pbf",
+          "size_mb": 115
+        },
+        {
+          "id": "florida-routing",
+          "version": "latest",
+          "title": "Florida",
+          "description": "Road network routing data for Florida.",
+          "url": "https://download.geofabrik.de/north-america/us/florida-latest.osm.pbf",
+          "size_mb": 430
+        },
+        {
+          "id": "georgia-routing",
+          "version": "latest",
+          "title": "Georgia",
+          "description": "Road network routing data for Georgia.",
+          "url": "https://download.geofabrik.de/north-america/us/georgia-latest.osm.pbf",
+          "size_mb": 235
+        },
+        {
+          "id": "mississippi-routing",
+          "version": "latest",
+          "title": "Mississippi",
+          "description": "Road network routing data for Mississippi.",
+          "url": "https://download.geofabrik.de/north-america/us/mississippi-latest.osm.pbf",
+          "size_mb": 100
+        },
+        {
+          "id": "north-carolina-routing",
+          "version": "latest",
+          "title": "North Carolina",
+          "description": "Road network routing data for North Carolina.",
+          "url": "https://download.geofabrik.de/north-america/us/north-carolina-latest.osm.pbf",
+          "size_mb": 275
+        },
+        {
+          "id": "south-carolina-routing",
+          "version": "latest",
+          "title": "South Carolina",
+          "description": "Road network routing data for South Carolina.",
+          "url": "https://download.geofabrik.de/north-america/us/south-carolina-latest.osm.pbf",
+          "size_mb": 125
+        },
+        {
+          "id": "tennessee-routing",
+          "version": "latest",
+          "title": "Tennessee",
+          "description": "Road network routing data for Tennessee.",
+          "url": "https://download.geofabrik.de/north-america/us/tennessee-latest.osm.pbf",
+          "size_mb": 180
+        },
+        {
+          "id": "virginia-routing",
+          "version": "latest",
+          "title": "Virginia",
+          "description": "Road network routing data for Virginia.",
+          "url": "https://download.geofabrik.de/north-america/us/virginia-latest.osm.pbf",
+          "size_mb": 230
+        }
+      ]
+    },
+    {
+      "name": "Midwest Region",
+      "slug": "midwest",
+      "description": "Routing data for the Midwest region — Illinois, Indiana, Iowa, Kansas, Michigan, Minnesota, Missouri, Nebraska, North Dakota, Ohio, South Dakota, Wisconsin.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "illinois-routing",
+          "version": "latest",
+          "title": "Illinois",
+          "description": "Road network routing data for Illinois.",
+          "url": "https://download.geofabrik.de/north-america/us/illinois-latest.osm.pbf",
+          "size_mb": 330
+        },
+        {
+          "id": "indiana-routing",
+          "version": "latest",
+          "title": "Indiana",
+          "description": "Road network routing data for Indiana.",
+          "url": "https://download.geofabrik.de/north-america/us/indiana-latest.osm.pbf",
+          "size_mb": 175
+        },
+        {
+          "id": "iowa-routing",
+          "version": "latest",
+          "title": "Iowa",
+          "description": "Road network routing data for Iowa.",
+          "url": "https://download.geofabrik.de/north-america/us/iowa-latest.osm.pbf",
+          "size_mb": 140
+        },
+        {
+          "id": "kansas-routing",
+          "version": "latest",
+          "title": "Kansas",
+          "description": "Road network routing data for Kansas.",
+          "url": "https://download.geofabrik.de/north-america/us/kansas-latest.osm.pbf",
+          "size_mb": 130
+        },
+        {
+          "id": "michigan-routing",
+          "version": "latest",
+          "title": "Michigan",
+          "description": "Road network routing data for Michigan.",
+          "url": "https://download.geofabrik.de/north-america/us/michigan-latest.osm.pbf",
+          "size_mb": 350
+        },
+        {
+          "id": "minnesota-routing",
+          "version": "latest",
+          "title": "Minnesota",
+          "description": "Road network routing data for Minnesota.",
+          "url": "https://download.geofabrik.de/north-america/us/minnesota-latest.osm.pbf",
+          "size_mb": 270
+        },
+        {
+          "id": "missouri-routing",
+          "version": "latest",
+          "title": "Missouri",
+          "description": "Road network routing data for Missouri.",
+          "url": "https://download.geofabrik.de/north-america/us/missouri-latest.osm.pbf",
+          "size_mb": 205
+        },
+        {
+          "id": "nebraska-routing",
+          "version": "latest",
+          "title": "Nebraska",
+          "description": "Road network routing data for Nebraska.",
+          "url": "https://download.geofabrik.de/north-america/us/nebraska-latest.osm.pbf",
+          "size_mb": 110
+        },
+        {
+          "id": "north-dakota-routing",
+          "version": "latest",
+          "title": "North Dakota",
+          "description": "Road network routing data for North Dakota.",
+          "url": "https://download.geofabrik.de/north-america/us/north-dakota-latest.osm.pbf",
+          "size_mb": 75
+        },
+        {
+          "id": "ohio-routing",
+          "version": "latest",
+          "title": "Ohio",
+          "description": "Road network routing data for Ohio.",
+          "url": "https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf",
+          "size_mb": 335
+        },
+        {
+          "id": "south-dakota-routing",
+          "version": "latest",
+          "title": "South Dakota",
+          "description": "Road network routing data for South Dakota.",
+          "url": "https://download.geofabrik.de/north-america/us/south-dakota-latest.osm.pbf",
+          "size_mb": 85
+        },
+        {
+          "id": "wisconsin-routing",
+          "version": "latest",
+          "title": "Wisconsin",
+          "description": "Road network routing data for Wisconsin.",
+          "url": "https://download.geofabrik.de/north-america/us/wisconsin-latest.osm.pbf",
+          "size_mb": 235
+        }
+      ]
+    },
+    {
+      "name": "Northeast Region",
+      "slug": "northeast",
+      "description": "Routing data for the Northeast region — Connecticut, Delaware, Kentucky, Maine, Maryland, Massachusetts, New Hampshire, New Jersey, New York, Pennsylvania, Rhode Island, Vermont, West Virginia.",
+      "icon": "IconRoute",
+      "language": "en",
+      "resources": [
+        {
+          "id": "connecticut-routing",
+          "version": "latest",
+          "title": "Connecticut",
+          "description": "Road network routing data for Connecticut.",
+          "url": "https://download.geofabrik.de/north-america/us/connecticut-latest.osm.pbf",
+          "size_mb": 70
+        },
+        {
+          "id": "delaware-routing",
+          "version": "latest",
+          "title": "Delaware",
+          "description": "Road network routing data for Delaware.",
+          "url": "https://download.geofabrik.de/north-america/us/delaware-latest.osm.pbf",
+          "size_mb": 25
+        },
+        {
+          "id": "kentucky-routing",
+          "version": "latest",
+          "title": "Kentucky",
+          "description": "Road network routing data for Kentucky.",
+          "url": "https://download.geofabrik.de/north-america/us/kentucky-latest.osm.pbf",
+          "size_mb": 155
+        },
+        {
+          "id": "maine-routing",
+          "version": "latest",
+          "title": "Maine",
+          "description": "Road network routing data for Maine.",
+          "url": "https://download.geofabrik.de/north-america/us/maine-latest.osm.pbf",
+          "size_mb": 90
+        },
+        {
+          "id": "maryland-routing",
+          "version": "latest",
+          "title": "Maryland",
+          "description": "Road network routing data for Maryland.",
+          "url": "https://download.geofabrik.de/north-america/us/maryland-latest.osm.pbf",
+          "size_mb": 145
+        },
+        {
+          "id": "massachusetts-routing",
+          "version": "latest",
+          "title": "Massachusetts",
+          "description": "Road network routing data for Massachusetts.",
+          "url": "https://download.geofabrik.de/north-america/us/massachusetts-latest.osm.pbf",
+          "size_mb": 185
+        },
+        {
+          "id": "new-hampshire-routing",
+          "version": "latest",
+          "title": "New Hampshire",
+          "description": "Road network routing data for New Hampshire.",
+          "url": "https://download.geofabrik.de/north-america/us/new-hampshire-latest.osm.pbf",
+          "size_mb": 60
+        },
+        {
+          "id": "new-jersey-routing",
+          "version": "latest",
+          "title": "New Jersey",
+          "description": "Road network routing data for New Jersey.",
+          "url": "https://download.geofabrik.de/north-america/us/new-jersey-latest.osm.pbf",
+          "size_mb": 195
+        },
+        {
+          "id": "new-york-routing",
+          "version": "latest",
+          "title": "New York",
+          "description": "Road network routing data for New York.",
+          "url": "https://download.geofabrik.de/north-america/us/new-york-latest.osm.pbf",
+          "size_mb": 640
+        },
+        {
+          "id": "pennsylvania-routing",
+          "version": "latest",
+          "title": "Pennsylvania",
+          "description": "Road network routing data for Pennsylvania.",
+          "url": "https://download.geofabrik.de/north-america/us/pennsylvania-latest.osm.pbf",
+          "size_mb": 430
+        },
+        {
+          "id": "rhode-island-routing",
+          "version": "latest",
+          "title": "Rhode Island",
+          "description": "Road network routing data for Rhode Island.",
+          "url": "https://download.geofabrik.de/north-america/us/rhode-island-latest.osm.pbf",
+          "size_mb": 30
+        },
+        {
+          "id": "vermont-routing",
+          "version": "latest",
+          "title": "Vermont",
+          "description": "Road network routing data for Vermont.",
+          "url": "https://download.geofabrik.de/north-america/us/vermont-latest.osm.pbf",
+          "size_mb": 50
+        },
+        {
+          "id": "west-virginia-routing",
+          "version": "latest",
+          "title": "West Virginia",
+          "description": "Road network routing data for West Virginia.",
+          "url": "https://download.geofabrik.de/north-america/us/west-virginia-latest.osm.pbf",
+          "size_mb": 90
+        }
+      ]
+    }
+  ]
+}

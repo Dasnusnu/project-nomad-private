@@ -7,6 +7,7 @@
 |
 */
 import BenchmarkController from '#controllers/benchmark_controller'
+import RoutingController from '#controllers/routing_controller'
 import ChatsController from '#controllers/chats_controller'
 import DocsController from '#controllers/docs_controller'
 import DownloadsController from '#controllers/downloads_controller'
@@ -80,6 +81,13 @@ router
     router.delete('/:filename', [MapsController, 'delete'])
   })
   .prefix('/api/maps')
+
+router
+  .group(() => {
+    router.post('/route', [RoutingController, 'route'])
+    router.get('/status', [RoutingController, 'status'])
+  })
+  .prefix('/api/routing')
 
 router
   .group(() => {

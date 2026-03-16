@@ -159,6 +159,42 @@ export default class ServiceSeeder extends BaseSeeder {
       is_dependency_service: false,
       depends_on: null,
     },
+    {
+      // Valhalla is the offline routing engine for the map directions feature.
+      // Routing data (OSM PBF files) must be placed in /storage/valhalla/ — Valhalla
+      // auto-builds the routing graph on first start. Subsequent restarts skip the
+      // rebuild (use_tiles_ignore_pbf=True) for fast startup.
+      service_name: SERVICE_NAMES.VALHALLA,
+      friendly_name: 'Route Planning',
+      powered_by: 'Valhalla',
+      display_order: 5,
+      description: 'Offline turn-by-turn directions for driving, walking, and cycling',
+      icon: 'IconRoute',
+      container_image: 'ghcr.io/gis-ops/docker-valhalla:latest',
+      source_repo: 'https://github.com/gis-ops/docker-valhalla',
+      container_command: null,
+      container_config: JSON.stringify({
+        HostConfig: {
+          RestartPolicy: { Name: 'unless-stopped' },
+          Binds: [`${ServiceSeeder.NOMAD_STORAGE_ABS_PATH}/valhalla:/custom_files`],
+          PortBindings: { '8002/tcp': [{ HostPort: '8002' }] },
+        },
+        ExposedPorts: { '8002/tcp': {} },
+        Env: [
+          // Skip re-processing PBF files if routing tiles already exist (fast restarts)
+          'use_tiles_ignore_pbf=True',
+          // Build a .tar archive of tiles for memory-mapped loading (faster subsequent starts)
+          'build_tar=True',
+          // Limit worker threads to avoid starving other services
+          'server_threads=2',
+        ],
+      }),
+      ui_location: '8002',
+      installed: false,
+      installation_status: 'idle',
+      is_dependency_service: false,
+      depends_on: null,
+    },
   ]
 
   async run() {
