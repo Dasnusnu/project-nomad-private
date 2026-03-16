@@ -4,24 +4,7 @@ import classNames from '~/lib/classNames'
 export type InstallActivityFeedProps = {
   activity: Array<{
     service_name: string
-    type:
-      | 'initializing'
-      | 'pulling'
-      | 'pulled'
-      | 'creating'
-      | 'created'
-      | 'preinstall'
-      | 'preinstall-complete'
-      | 'starting'
-      | 'started'
-      | 'finalizing'
-      | 'completed'
-      | 'update-pulling'
-      | 'update-stopping'
-      | 'update-creating'
-      | 'update-starting'
-      | 'update-complete'
-      | 'update-rollback'
+    type: string
     timestamp: string
     message: string
   }>
@@ -48,16 +31,25 @@ const InstallActivityFeed: React.FC<InstallActivityFeedProps> = ({ activity, cla
               <div className="relative flex size-6 flex-none items-center justify-center bg-transparent">
                 {activityItem.type === 'completed' || activityItem.type === 'update-complete' ? (
                   <IconCircleCheck aria-hidden="true" className="size-6 text-indigo-600" />
-                ) : activityItem.type === 'update-rollback' ? (
+                ) : activityItem.type === 'error' || activityItem.type === 'update-rollback' ? (
                   <IconCircleX aria-hidden="true" className="size-6 text-red-500" />
                 ) : (
                   <div className="size-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
                 )}
               </div>
-              <p className="flex-auto py-0.5 text-xs/5 text-gray-500">
-                <span className="font-semibold text-gray-900">{activityItem.service_name}</span> -{' '}
-                {activityItem.type.charAt(0).toUpperCase() + activityItem.type.slice(1)}
-              </p>
+              <div className="flex-auto py-0.5">
+                <p className="text-xs/5 text-gray-500">
+                  <span className="font-semibold text-gray-900">{activityItem.service_name}</span> -{' '}
+                  <span className={activityItem.type === 'error' ? 'text-red-600 font-medium' : ''}>
+                    {activityItem.type.charAt(0).toUpperCase() + activityItem.type.slice(1)}
+                  </span>
+                </p>
+                {activityItem.message && (
+                  <p className={classNames('text-xs mt-0.5', activityItem.type === 'error' ? 'text-red-500' : 'text-gray-400')}>
+                    {activityItem.message}
+                  </p>
+                )}
+              </div>
               <time
                 dateTime={activityItem.timestamp}
                 className="flex-none py-0.5 text-xs/5 text-gray-500"

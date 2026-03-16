@@ -522,6 +522,19 @@ export class DockerService {
         }
       }
 
+      // Remove any stale container left from a previous failed install attempt.
+      // Safe here because createContainerPreflight only reaches this point when service.installed === false.
+      const allContainers = await this.docker.listContainers({ all: true })
+      const stale = allContainers.find((c) => c.Names.includes(`/${service.service_name}`))
+      if (stale) {
+        this._broadcast(
+          service.service_name,
+          'removing',
+          `Removing stale container from previous install attempt...`
+        )
+        await this.docker.getContainer(stale.Id).remove({ force: true })
+      }
+
       this._broadcast(
         service.service_name,
         'creating',
