@@ -1,0 +1,7 @@
+# Development compose override — used exclusively by dev-update.sh.
+# Swaps the published image for a locally built one and disables registry pulls.
+# DO NOT use in production.
+services:
+  admin:
+    image: project-nomad:dev
+    pull_policy: never
