@@ -170,8 +170,8 @@ export default class ServiceSeeder extends BaseSeeder {
       display_order: 5,
       description: 'Offline turn-by-turn directions for driving, walking, and cycling',
       icon: 'IconRoute',
-      container_image: 'ghcr.io/gis-ops/docker-valhalla:latest',
-      source_repo: 'https://github.com/gis-ops/docker-valhalla',
+      container_image: 'ghcr.io/nilsnolde/docker-valhalla/valhalla:latest',
+      source_repo: 'https://github.com/nilsnolde/docker-valhalla',
       container_command: null,
       container_config: JSON.stringify({
         HostConfig: {
