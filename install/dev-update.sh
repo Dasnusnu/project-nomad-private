@@ -72,6 +72,19 @@ command -v docker &>/dev/null \
 docker info &>/dev/null 2>&1 \
   || die "Docker daemon is not running. Start it and try again."
 
+# Ensure the disk-info file exists as a regular file, not a directory.
+# Docker will silently create a directory at the mount source if the path
+# doesn't exist, which causes the admin container to fail to start.
+DISK_INFO_FILE="/tmp/nomad-disk-info.json"
+if [[ -d "$DISK_INFO_FILE" ]]; then
+  warn "Found directory at $DISK_INFO_FILE — removing and recreating as a file."
+  rm -rf "$DISK_INFO_FILE"
+fi
+if [[ ! -f "$DISK_INFO_FILE" ]]; then
+  echo '{}' > "$DISK_INFO_FILE"
+  info "Created $DISK_INFO_FILE"
+fi
+
 info "Repo root:    $REPO_ROOT"
 info "Compose file: $COMPOSE_FILE"
 info "Dev image:    $DEV_IMAGE"
