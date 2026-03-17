@@ -37,6 +37,13 @@ const VALIDATORS: Record<ManifestType, any> = {
   routing: routingSpecSchema,
 }
 
+const BUNDLED_FILENAMES: Record<ManifestType, string> = {
+  zim_categories: 'kiwix-categories.json',
+  maps: 'maps.json',
+  wikipedia: 'wikipedia.json',
+  routing: 'routing.json',
+}
+
 export class CollectionManifestService {
   private readonly mapStoragePath = '/storage/maps'
 
@@ -89,7 +96,19 @@ export class CollectionManifestService {
     } catch {
       // Fetch failed, will fall back to cache
     }
-    return this.getCachedSpec<T>(type)
+    return (await this.getCachedSpec<T>(type)) ?? this.getBundledSpec<T>(type)
+  }
+
+  private async getBundledSpec<T>(type: ManifestType): Promise<T | null> {
+    try {
+      const { readFile } = await import('fs/promises')
+      const filePath = join(process.cwd(), 'collections', BUNDLED_FILENAMES[type])
+      const data = JSON.parse(await readFile(filePath, 'utf-8'))
+      logger.info(`[CollectionManifestService] Using bundled spec for ${type}`)
+      return await vine.validate({ schema: VALIDATORS[type], data }) as T
+    } catch {
+      return null
+    }
   }
 
   // ---- Status computation ----
