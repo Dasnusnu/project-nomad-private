@@ -256,6 +256,13 @@ export class RoutingService implements IRoutingService {
 
   private async restartValhalla(): Promise<void> {
     try {
+      // Delete stale tiles so Valhalla rebuilds from the current PBF files.
+      // Without this, use_tiles_ignore_pbf=True causes Valhalla to serve the
+      // old tile set and silently ignore any newly downloaded or deleted PBFs.
+      const { rm } = await import('fs/promises')
+      await rm(join(this.baseDirPath, 'valhalla_tiles.tar'), { force: true })
+      await rm(join(this.baseDirPath, 'valhalla_tiles'), { recursive: true, force: true })
+
       const isWindows = process.platform === 'win32'
       const docker = new Docker({
         socketPath: isWindows ? '//./pipe/docker_engine' : '/var/run/docker.sock',
