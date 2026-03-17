@@ -97,7 +97,11 @@ echo ""
 step "Building image from source..."
 BUILD_START=$(date +%s)
 
-docker build -t "$DEV_IMAGE" "$REPO_ROOT"
+# --no-cache ensures the TypeScript build stage always runs with the latest
+# source files. Docker's layer cache for ADD/COPY can falsely reuse a prior
+# build layer when files are added or removed (not just modified), causing the
+# compiled image to silently omit new code.
+docker build --no-cache -t "$DEV_IMAGE" "$REPO_ROOT"
 
 BUILD_END=$(date +%s)
 info "Build complete in $((BUILD_END - BUILD_START))s."
