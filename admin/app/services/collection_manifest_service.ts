@@ -24,10 +24,10 @@ import type {
 } from '../../types/collections.js'
 
 const SPEC_URLS: Record<ManifestType, string> = {
-  zim_categories: 'https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/collections/kiwix-categories.json',
-  maps: 'https://github.com/Crosstalk-Solutions/project-nomad/raw/refs/heads/main/collections/maps.json',
-  wikipedia: 'https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/collections/wikipedia.json',
-  routing: 'https://github.com/Crosstalk-Solutions/project-nomad/raw/refs/heads/main/collections/routing.json',
+  zim_categories: 'https://raw.githubusercontent.com/Dasnusnu/project-nomad-private/refs/heads/main/collections/kiwix-categories.json',
+  maps: 'https://github.com/Dasnusnu/project-nomad-private/raw/refs/heads/main/collections/maps.json',
+  wikipedia: 'https://raw.githubusercontent.com/Dasnusnu/project-nomad-private/refs/heads/main/collections/wikipedia.json',
+  routing: 'https://github.com/Dasnusnu/project-nomad-private/raw/refs/heads/main/collections/routing.json',
 }
 
 const VALIDATORS: Record<ManifestType, any> = {

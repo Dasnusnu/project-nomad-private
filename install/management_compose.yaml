@@ -1,7 +1,7 @@
 name: project-nomad
 services:
   admin:
-    image: kagzaz/project-nomad:latest
+    image: ghcr.io/dasnusnu/project-nomad-private:latest
     pull_policy: always
     container_name: nomad_admin
     restart: unless-stopped
