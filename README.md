@@ -36,12 +36,13 @@ N.O.M.A.D. is a management UI ("Command Center") and API that orchestrates a col
 - **Information Library** — offline Wikipedia, medical references, ebooks, and more via [Kiwix](https://kiwix.org/)
 - **Education Platform** — Khan Academy courses with progress tracking via [Kolibri](https://learningequality.org/kolibri/)
 - **Offline Maps** — downloadable regional maps via [ProtoMaps](https://protomaps.com)
+- **Offline Turn-by-Turn Directions** — MapQuest-style routing with driving, walking, and cycling support via [Valhalla](https://github.com/nilsnolde/docker-valhalla), with a built-in routing data manager for downloading OSM PBF files by region
 - **Data Tools** — encryption, encoding, and analysis via [CyberChef](https://gchq.github.io/CyberChef/)
 - **Notes** — local note-taking via [FlatNotes](https://github.com/dullage/flatnotes)
 - **System Benchmark** — hardware scoring with a [community leaderboard](https://benchmark.projectnomad.us)
 - **Easy Setup Wizard** — guided first-time configuration with curated content collections
 
-N.O.M.A.D. also includes built-in tools like a Wikipedia content selector, ZIM library manager, and content explorer.
+N.O.M.A.D. also includes built-in tools like a Wikipedia content selector, ZIM library manager, routing data manager, and content explorer.
 
 ## What's Included
 
@@ -51,6 +52,7 @@ N.O.M.A.D. also includes built-in tools like a Wikipedia content selector, ZIM l
 | AI Assistant | Ollama + Qdrant | Built-in chat with document upload and semantic search |
 | Education Platform | Kolibri | Khan Academy courses, progress tracking, multi-user support |
 | Offline Maps | ProtoMaps | Downloadable regional maps with search and navigation |
+| Offline Directions | Valhalla | Turn-by-turn routing for driving, walking, and cycling — download road data by US region |
 | Data Tools | CyberChef | Encryption, encoding, hashing, and data analysis |
 | Notes | FlatNotes | Local note-taking with markdown support |
 | System Benchmark | Built-in | Hardware scoring, Builder Tags, and community leaderboard |
