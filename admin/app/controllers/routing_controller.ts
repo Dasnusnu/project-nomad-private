@@ -1,19 +1,23 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
+import { RoutingService } from '#services/routing_service'
+import {
+  assertNotPrivateUrl,
+  downloadCollectionValidator,
+  filenameParamValidator,
+  remoteDownloadValidator,
+} from '#validators/common'
+import { inject } from '@adonisjs/core'
 
-// Valhalla runs as a local Docker service on port 8002
-const VALHALLA_BASE = 'http://localhost:8002'
+// Valhalla runs as a Docker service on the shared project-nomad network
+const VALHALLA_BASE = 'http://nomad_valhalla:8002'
 
+@inject()
 export default class RoutingController {
+  constructor(private routingService: RoutingService) {}
+
   /**
    * Proxy a route request to the local Valhalla instance.
-   *
-   * Accepts a Valhalla-compatible request body and forwards it with
-   * sensible defaults (miles, GeoJSON shape format) so the frontend
-   * can pass coords and a costing mode without knowing Valhalla internals.
-   *
-   * Returns a 503 with a human-readable message when Valhalla is not running
-   * (e.g. service not yet installed, still building routing tiles on first boot).
    */
   async route({ request, response }: HttpContext) {
     const body = request.body()
@@ -24,8 +28,6 @@ export default class RoutingController {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...body,
-          // Return route geometry as GeoJSON so the frontend can feed it
-          // directly to MapLibre without a polyline decode step
           shape_format: 'geojson',
           directions_options: { units: 'miles' },
         }),
@@ -51,8 +53,6 @@ export default class RoutingController {
 
   /**
    * Quick liveness check for the Valhalla service.
-   * Returns { available: true } if the service responds, { available: false } otherwise.
-   * Used by the DirectionsPanel to show an appropriate prompt to the user.
    */
   async status({ response }: HttpContext) {
     try {
@@ -63,5 +63,63 @@ export default class RoutingController {
     } catch {
       return response.json({ available: false })
     }
+  }
+
+  async listCuratedCollections({}: HttpContext) {
+    return await this.routingService.listCuratedCollections()
+  }
+
+  async listPbfFiles({}: HttpContext) {
+    return { files: await this.routingService.listPbfFiles() }
+  }
+
+  async downloadCollection({ request }: HttpContext) {
+    const payload = await request.validateUsing(downloadCollectionValidator)
+    const resources = await this.routingService.downloadCollection(payload.slug)
+    return {
+      message: 'Collection download started successfully',
+      slug: payload.slug,
+      resources,
+    }
+  }
+
+  async downloadRemote({ request }: HttpContext) {
+    const payload = await request.validateUsing(remoteDownloadValidator)
+    assertNotPrivateUrl(payload.url)
+    const filename = await this.routingService.downloadRemote(payload.url)
+    return {
+      message: 'Download started successfully',
+      filename,
+      url: payload.url,
+    }
+  }
+
+  async downloadRemotePreflight({ request }: HttpContext) {
+    const payload = await request.validateUsing(remoteDownloadValidator)
+    assertNotPrivateUrl(payload.url)
+    const info = await this.routingService.downloadRemotePreflight(payload.url)
+    return info
+  }
+
+  async fetchLatestCollections({}: HttpContext) {
+    const success = await this.routingService.fetchLatestCollections()
+    return { success }
+  }
+
+  async delete({ request, response }: HttpContext) {
+    const payload = await request.validateUsing(filenameParamValidator)
+
+    try {
+      await this.routingService.delete(payload.params.filename)
+    } catch (error) {
+      if (error.message === 'not_found') {
+        return response.status(404).send({
+          message: `Routing file with key ${payload.params.filename} not found`,
+        })
+      }
+      throw error
+    }
+
+    return { message: 'Routing file deleted successfully' }
   }
 }

@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 import { join } from 'path'
 import CollectionManifest from '#models/collection_manifest'
 import InstalledResource from '#models/installed_resource'
-import { zimCategoriesSpecSchema, mapsSpecSchema, wikipediaSpecSchema } from '#validators/curated_collections'
+import { zimCategoriesSpecSchema, mapsSpecSchema, routingSpecSchema, wikipediaSpecSchema } from '#validators/curated_collections'
 import {
   ensureDirectoryExists,
   listDirectoryContents,
@@ -16,6 +16,7 @@ import type {
   ManifestType,
   ZimCategoriesSpec,
   MapsSpec,
+  RoutingSpec,
   CategoryWithStatus,
   CollectionWithStatus,
   SpecResource,
@@ -26,12 +27,14 @@ const SPEC_URLS: Record<ManifestType, string> = {
   zim_categories: 'https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/collections/kiwix-categories.json',
   maps: 'https://github.com/Crosstalk-Solutions/project-nomad/raw/refs/heads/main/collections/maps.json',
   wikipedia: 'https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/collections/wikipedia.json',
+  routing: 'https://github.com/Crosstalk-Solutions/project-nomad/raw/refs/heads/main/collections/routing.json',
 }
 
 const VALIDATORS: Record<ManifestType, any> = {
   zim_categories: zimCategoriesSpecSchema,
   maps: mapsSpecSchema,
   wikipedia: wikipediaSpecSchema,
+  routing: routingSpecSchema,
 }
 
 export class CollectionManifestService {
@@ -109,6 +112,24 @@ export class CollectionManifestService {
     if (!spec) return []
 
     const installedResources = await InstalledResource.query().where('resource_type', 'map')
+    const installedIds = new Set(installedResources.map((r) => r.resource_id))
+
+    return spec.collections.map((collection) => {
+      const installedCount = collection.resources.filter((r) => installedIds.has(r.id)).length
+      return {
+        ...collection,
+        all_installed: installedCount === collection.resources.length,
+        installed_count: installedCount,
+        total_count: collection.resources.length,
+      }
+    })
+  }
+
+  async getRoutingCollectionsWithStatus(): Promise<CollectionWithStatus[]> {
+    const spec = await this.getSpecWithFallback<RoutingSpec>('routing')
+    if (!spec) return []
+
+    const installedResources = await InstalledResource.query().where('resource_type', 'routing')
     const installedIds = new Set(installedResources.map((r) => r.resource_id))
 
     return spec.collections.map((collection) => {

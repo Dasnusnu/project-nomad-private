@@ -52,6 +52,22 @@ export const mapsSpecSchema = vine.object({
   ).minLength(1),
 })
 
+// ---- Routing spec (versioned) ----
+
+export const routingSpecSchema = vine.object({
+  spec_version: vine.string(),
+  collections: vine.array(
+    vine.object({
+      slug: vine.string(),
+      name: vine.string(),
+      description: vine.string(),
+      icon: vine.string(),
+      language: vine.string().minLength(2).maxLength(5),
+      resources: vine.array(specResourceValidator).minLength(1),
+    })
+  ).minLength(1),
+})
+
 // ---- Wikipedia spec (versioned) ----
 
 export const wikipediaSpecSchema = vine.object({

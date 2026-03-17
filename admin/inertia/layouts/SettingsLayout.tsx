@@ -5,6 +5,7 @@ import {
   IconFolder,
   IconGavel,
   IconMapRoute,
+  IconNavigation,
   IconSettings,
   IconTerminal2,
   IconWand,
@@ -27,6 +28,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     { name: 'Content Explorer', href: '/settings/zim/remote-explorer', icon: IconZoom, current: false },
     { name: 'Content Manager', href: '/settings/zim', icon: IconFolder, current: false },
     { name: 'Maps Manager', href: '/settings/maps', icon: IconMapRoute, current: false },
+    { name: 'Routing Data', href: '/settings/routing', icon: IconNavigation, current: false },
     {
       name: 'Service Logs & Metrics',
       href: getServiceLink('9999'),

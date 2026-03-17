@@ -6,6 +6,7 @@ import { createHash } from 'crypto'
 import { DockerService } from '#services/docker_service'
 import { ZimService } from '#services/zim_service'
 import { MapService } from '#services/map_service'
+import { RoutingService } from '#services/routing_service'
 import { EmbedFileJob } from './embed_file_job.js'
 
 export class RunDownloadJob {
@@ -47,12 +48,12 @@ export class RunDownloadJob {
             // Look up the old entry so we can clean up the previous file after updating
             const oldEntry = await InstalledResource.query()
               .where('resource_id', resourceMetadata.resource_id)
-              .where('resource_type', filetype as 'zim' | 'map')
+              .where('resource_type', filetype as 'zim' | 'map' | 'routing')
               .first()
             const oldFilePath = oldEntry?.file_path ?? null
 
             await InstalledResource.updateOrCreate(
-              { resource_id: resourceMetadata.resource_id, resource_type: filetype as 'zim' | 'map' },
+              { resource_id: resourceMetadata.resource_id, resource_type: filetype as 'zim' | 'map' | 'routing' },
               {
                 version: resourceMetadata.version,
                 collection_ref: resourceMetadata.collection_ref,
@@ -94,6 +95,9 @@ export class RunDownloadJob {
           } else if (filetype === 'map') {
             const mapsService = new MapService()
             await mapsService.downloadRemoteSuccessCallback([url], false)
+          } else if (filetype === 'routing') {
+            const routingService = new RoutingService()
+            await routingService.downloadRemoteSuccessCallback([url], false)
           }
         } catch (error) {
           console.error(

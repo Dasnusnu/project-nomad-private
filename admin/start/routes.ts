@@ -52,6 +52,7 @@ router
     router.get('/maps', [SettingsController, 'maps'])
     router.get('/models', [SettingsController, 'models'])
     router.get('/update', [SettingsController, 'update'])
+    router.get('/routing', [SettingsController, 'routing'])
     router.get('/zim', [SettingsController, 'zim'])
     router.get('/zim/remote-explorer', [SettingsController, 'zimRemote'])
     router.get('/benchmark', [SettingsController, 'benchmark'])
@@ -86,6 +87,13 @@ router
   .group(() => {
     router.post('/route', [RoutingController, 'route'])
     router.get('/status', [RoutingController, 'status'])
+    router.get('/curated-collections', [RoutingController, 'listCuratedCollections'])
+    router.get('/pbf-files', [RoutingController, 'listPbfFiles'])
+    router.post('/download-collection', [RoutingController, 'downloadCollection'])
+    router.post('/download-remote', [RoutingController, 'downloadRemote'])
+    router.post('/download-remote-preflight', [RoutingController, 'downloadRemotePreflight'])
+    router.post('/fetch-latest-collections', [RoutingController, 'fetchLatestCollections'])
+    router.delete('/:filename', [RoutingController, 'delete'])
   })
   .prefix('/api/routing')
 

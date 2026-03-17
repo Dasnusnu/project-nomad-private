@@ -480,6 +480,68 @@ class API {
     })()
   }
 
+  async listCuratedRoutingCollections() {
+    return catchInternal(async () => {
+      const response = await this.client.get<CollectionWithStatus[]>(
+        '/routing/curated-collections'
+      )
+      return response.data
+    })()
+  }
+
+  async listRoutingPbfFiles() {
+    return catchInternal(async () => {
+      const response = await this.client.get<{ files: FileEntry[] }>('/routing/pbf-files')
+      return response.data.files
+    })()
+  }
+
+  async downloadRoutingCollection(slug: string) {
+    return catchInternal(async () => {
+      const response = await this.client.post<{
+        message: string
+        slug: string
+        resources: string[] | null
+      }>('/routing/download-collection', { slug })
+      return response.data
+    })()
+  }
+
+  async downloadRemoteRoutingFile(url: string) {
+    return catchInternal(async () => {
+      const response = await this.client.post<{ message: string; filename: string; url: string }>(
+        '/routing/download-remote',
+        { url }
+      )
+      return response.data
+    })()
+  }
+
+  async downloadRemoteRoutingFilePreflight(url: string) {
+    return catchInternal(async () => {
+      const response = await this.client.post<
+        { filename: string; size: number } | { message: string }
+      >('/routing/download-remote-preflight', { url })
+      return response.data
+    })()
+  }
+
+  async fetchLatestRoutingCollections() {
+    return catchInternal(async () => {
+      const response = await this.client.post<{ success: boolean }>(
+        '/routing/fetch-latest-collections'
+      )
+      return response.data
+    })()
+  }
+
+  async deleteRoutingFile(filename: string) {
+    return catchInternal(async () => {
+      const response = await this.client.delete<{ message: string }>(`/routing/${filename}`)
+      return response.data
+    })()
+  }
+
   async listCuratedCategories() {
     return catchInternal(async () => {
       const response = await this.client.get<CategoryWithStatus[]>('/easy-setup/curated-categories')

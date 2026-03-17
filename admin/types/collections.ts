@@ -44,6 +44,11 @@ export type MapsSpec = {
   collections: SpecCollection[]
 }
 
+export type RoutingSpec = {
+  spec_version: string
+  collections: SpecCollection[]
+}
+
 export type WikipediaOption = {
   id: string
   name: string
@@ -58,7 +63,7 @@ export type WikipediaSpec = {
   options: WikipediaOption[]
 }
 
-export type ManifestType = 'zim_categories' | 'maps' | 'wikipedia'
+export type ManifestType = 'zim_categories' | 'maps' | 'wikipedia' | 'routing'
 
 export type ResourceStatus = 'installed' | 'not_installed' | 'update_available'
 

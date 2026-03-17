@@ -9,11 +9,15 @@ export type DownloadURLModalProps = Omit<
 > & {
   suggestedURL?: string
   onPreflightSuccess?: (url: string) => void
+  preflightFn?: (url: string) => Promise<{ filename: string; size: number } | { message: string } | undefined>
+  fileTypeLabel?: string
 }
 
 const DownloadURLModal: React.FC<DownloadURLModalProps> = ({
   suggestedURL,
   onPreflightSuccess,
+  preflightFn,
+  fileTypeLabel,
   ...modalProps
 }) => {
   const [url, setUrl] = useState<string>('')
@@ -24,7 +28,7 @@ const DownloadURLModal: React.FC<DownloadURLModalProps> = ({
     try {
       setLoading(true)
       setMessages([`Running preflight check for URL: ${downloadUrl}`])
-      const res = await api.downloadRemoteMapRegionPreflight(downloadUrl)
+      const res = await (preflightFn ? preflightFn(downloadUrl) : api.downloadRemoteMapRegionPreflight(downloadUrl))
       if (!res) {
         throw new Error('An unknown error occurred during the preflight check.')
       }
@@ -64,9 +68,8 @@ const DownloadURLModal: React.FC<DownloadURLModalProps> = ({
     >
       <div className="flex flex-col pb-4">
         <p className="text-gray-700 mb-8">
-          Enter the URL of the map region file you wish to download. The URL must be publicly
-          reachable and end with .pmtiles. A preflight check will be run to verify the file's
-          availability, type, and approximate size.
+          Enter the URL of the {fileTypeLabel || 'map region'} file you wish to download. The URL must be publicly
+          reachable. A preflight check will be run to verify the file's availability, type, and approximate size.
         </p>
         <Input
           name="download-url"

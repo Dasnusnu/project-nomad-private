@@ -100,8 +100,9 @@ export default function Home(props: {
   const shouldHighlightEasySetup = easySetupVisited?.value ? easySetupVisited?.value !== 'true' : false
 
   // Add installed services (non-dependency services only)
+  // Valhalla is excluded — routing is a built-in feature of Maps, not a standalone app
   props.system.services
-    .filter((service) => service.installed && service.ui_location)
+    .filter((service) => service.installed && service.ui_location && service.service_name !== SERVICE_NAMES.VALHALLA)
     .forEach((service) => {
       items.push({
         // Inject custom AI Assistant name if this is the chat service

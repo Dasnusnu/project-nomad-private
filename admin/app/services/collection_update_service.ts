@@ -37,11 +37,15 @@ export class CollectionUpdateService {
     }
 
     const requestBody: ResourceUpdateCheckRequest = {
-      resources: installed.map((r) => ({
-        resource_id: r.resource_id,
-        resource_type: r.resource_type,
-        installed_version: r.version,
-      })),
+      resources: installed
+        .filter((r): r is typeof r & { resource_type: 'zim' | 'map' } =>
+          r.resource_type === 'zim' || r.resource_type === 'map'
+        )
+        .map((r) => ({
+          resource_id: r.resource_id,
+          resource_type: r.resource_type,
+          installed_version: r.version,
+        })),
     }
 
     try {

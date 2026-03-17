@@ -108,6 +108,7 @@ const ADDITIONAL_TOOLS: Capability[] = [
 type WizardStep = 1 | 2 | 3 | 4
 
 const CURATED_MAP_COLLECTIONS_KEY = 'curated-map-collections'
+const CURATED_ROUTING_COLLECTIONS_KEY = 'curated-routing-collections'
 const CURATED_CATEGORIES_KEY = 'curated-categories'
 const WIKIPEDIA_STATE_KEY = 'wikipedia-state'
 
@@ -118,6 +119,7 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
   const [currentStep, setCurrentStep] = useState<WizardStep>(1)
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [selectedMapCollections, setSelectedMapCollections] = useState<string[]>([])
+  const [selectedRoutingCollections, setSelectedRoutingCollections] = useState<string[]>([])
   const [selectedAiModels, setSelectedAiModels] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [showAdditionalTools, setShowAdditionalTools] = useState(false)
@@ -138,6 +140,7 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
   const anySelectionMade =
     selectedServices.length > 0 ||
     selectedMapCollections.length > 0 ||
+    selectedRoutingCollections.length > 0 ||
     selectedTiers.size > 0 ||
     selectedAiModels.length > 0 ||
     (selectedWikipedia !== null && selectedWikipedia !== 'none')
@@ -145,6 +148,12 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
   const { data: mapCollections, isLoading: isLoadingMaps } = useQuery({
     queryKey: [CURATED_MAP_COLLECTIONS_KEY],
     queryFn: () => api.listCuratedMapCollections(),
+    refetchOnWindowFocus: false,
+  })
+
+  const { data: routingCollections } = useQuery({
+    queryKey: [CURATED_ROUTING_COLLECTIONS_KEY],
+    queryFn: () => api.listCuratedRoutingCollections(),
     refetchOnWindowFocus: false,
   })
 
@@ -186,6 +195,12 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
 
   const toggleMapCollection = (slug: string) => {
     setSelectedMapCollections((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    )
+  }
+
+  const toggleRoutingCollection = (slug: string) => {
+    setSelectedRoutingCollections((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     )
   }
@@ -252,6 +267,16 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
       })
     }
 
+    // Add routing collections
+    if (routingCollections) {
+      selectedRoutingCollections.forEach((slug) => {
+        const collection = routingCollections.find((c) => c.slug === slug)
+        if (collection) {
+          totalBytes += collection.resources.reduce((sum, r) => sum + r.size_mb * 1024 * 1024, 0)
+        }
+      })
+    }
+
     // Add AI models
     if (recommendedModels) {
       selectedAiModels.forEach((modelName) => {
@@ -287,10 +312,12 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
   }, [
     selectedTiers,
     selectedMapCollections,
+    selectedRoutingCollections,
     selectedAiModels,
     selectedWikipedia,
     categories,
     mapCollections,
+    routingCollections,
     recommendedModels,
     wikipediaState,
   ])
@@ -370,6 +397,7 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
 
       const downloadPromises = [
         ...selectedMapCollections.map((slug) => api.downloadMapCollection(slug)),
+        ...selectedRoutingCollections.map((slug) => api.downloadRoutingCollection(slug)),
         ...categoryTierPromises,
         ...selectedAiModels.map((modelName) => api.downloadModel(modelName)),
       ]
@@ -766,6 +794,51 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
           <p className="text-gray-600 text-lg">No map collections available at this time.</p>
         </div>
       )}
+
+      {/* Routing data section — shown when routing collections are available */}
+      {routingCollections && routingCollections.length > 0 && (
+        <div className="mt-10">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Routing Data <span className="text-lg font-normal text-gray-500">(Optional)</span></h2>
+            <p className="text-gray-600">
+              Download OSM routing data for offline turn-by-turn directions. Select the same regions
+              as your maps for the best experience.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {routingCollections.map((collection) => {
+              const matchesSelectedMap = selectedMapCollections.includes(collection.slug)
+              return (
+                <div
+                  key={collection.slug}
+                  onClick={() =>
+                    isOnline && !collection.all_installed && toggleRoutingCollection(collection.slug)
+                  }
+                  className={classNames(
+                    'relative',
+                    selectedRoutingCollections.includes(collection.slug) &&
+                    'ring-4 ring-desert-green rounded-lg',
+                    collection.all_installed && 'opacity-75',
+                    !isOnline && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <CuratedCollectionCard collection={collection} />
+                  {selectedRoutingCollections.includes(collection.slug) && (
+                    <div className="absolute top-2 right-2 bg-desert-green rounded-full p-1">
+                      <IconCheck size={32} className="text-white" />
+                    </div>
+                  )}
+                  {matchesSelectedMap && !selectedRoutingCollections.includes(collection.slug) && !collection.all_installed && (
+                    <div className="absolute top-2 left-2 bg-desert-orange-light text-white text-xs font-semibold px-2 py-1 rounded-full">
+                      Suggested
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -969,6 +1042,7 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
     const hasSelections =
       selectedServices.length > 0 ||
       selectedMapCollections.length > 0 ||
+      selectedRoutingCollections.length > 0 ||
       selectedTiers.size > 0 ||
       selectedAiModels.length > 0 ||
       (selectedWikipedia !== null && selectedWikipedia !== 'none')
@@ -1020,6 +1094,25 @@ export default function EasySetupWizard(props: { system: { services: ServiceSlim
                 <ul className="space-y-2">
                   {selectedMapCollections.map((slug) => {
                     const collection = mapCollections?.find((c) => c.slug === slug)
+                    return (
+                      <li key={slug} className="flex items-center">
+                        <IconCheck size={20} className="text-desert-green mr-2" />
+                        <span className="text-gray-700">{collection?.name || slug}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {selectedRoutingCollections.length > 0 && (
+              <div className="bg-white rounded-lg border-2 border-desert-stone-light p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Routing Data to Download ({selectedRoutingCollections.length})
+                </h3>
+                <ul className="space-y-2">
+                  {selectedRoutingCollections.map((slug) => {
+                    const collection = routingCollections?.find((c) => c.slug === slug)
                     return (
                       <li key={slug} className="flex items-center">
                         <IconCheck size={20} className="text-desert-green mr-2" />

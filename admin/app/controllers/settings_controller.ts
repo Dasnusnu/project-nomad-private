@@ -3,6 +3,7 @@ import { BenchmarkService } from '#services/benchmark_service';
 import { MapService } from '#services/map_service';
 import { OllamaService } from '#services/ollama_service';
 import { RagService } from '#services/rag_service';
+import { RoutingService } from '#services/routing_service';
 import { SystemService } from '#services/system_service';
 import { updateSettingSchema } from '#validators/settings';
 import { inject } from '@adonisjs/core';
@@ -17,7 +18,8 @@ export default class SettingsController {
         private mapService: MapService,
         private benchmarkService: BenchmarkService,
         private ollamaService: OllamaService,
-        private ragService: RagService
+        private ragService: RagService,
+        private routingService: RoutingService
     ) { }
 
     async system({ inertia }: HttpContext) {
@@ -89,6 +91,15 @@ export default class SettingsController {
 
     async zimRemote({ inertia }: HttpContext) {
         return inertia.render('settings/zim/remote-explorer');
+    }
+
+    async routing({ inertia }: HttpContext) {
+        const pbfFiles = await this.routingService.listPbfFiles()
+        return inertia.render('settings/routing', {
+            routing: {
+                pbfFiles,
+            }
+        })
     }
 
     async benchmark({ inertia }: HttpContext) {
