@@ -33,12 +33,13 @@ NOMAD_DIR="/opt/project-nomad"
 
 # SCRIPT_DIR is the directory containing this script. When the repo is cloned
 # locally and the script is run from within it, all install/ files are available
-# here and no network downloads are needed (except wait-for-it, which is a
-# third-party script not included in this repository).
+# here and no network downloads are needed.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-WAIT_FOR_IT_SCRIPT_URL="https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh"
-
+MANAGEMENT_COMPOSE_FILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/management_compose.yaml"
+START_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/start_nomad.sh"
+STOP_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/stop_nomad.sh"
+UPDATE_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/update_nomad.sh"
 script_option_debug='true'
 accepted_terms='false'
 local_ip_address=''
@@ -97,6 +98,11 @@ ensure_dependencies_installed() {
   # Check for curl
   if ! command -v curl &> /dev/null; then
     missing_deps+=("curl")
+  fi
+
+  # Check for gpg (required for NVIDIA container toolkit keyring)
+  if ! command -v gpg &> /dev/null; then
+    missing_deps+=("gpg")
   fi
 
   # Check for whiptail (used for dialogs, though not currently active)
@@ -199,6 +205,16 @@ ensure_docker_installed() {
     else
       echo -e "${GREEN}#${RESET} Docker service is already running.\\n"
     fi
+  fi
+}
+
+check_docker_compose() {
+  # Check if 'docker compose' (v2 plugin) is available
+  if ! docker compose version &>/dev/null; then
+    echo -e "${RED}#${RESET} Docker Compose v2 is not installed or not available as a Docker plugin."
+    echo -e "${YELLOW}#${RESET} This script requires 'docker compose' (v2), not 'docker-compose' (v1)."
+    echo -e "${YELLOW}#${RESET} Please read the Docker documentation at https://docs.docker.com/compose/install/ for instructions on how to install Docker Compose v2."
+    exit 1
   fi
 }
 
@@ -328,7 +344,9 @@ setup_nvidia_container_toolkit() {
 }
 
 get_install_confirmation(){
-  read -p "This script will install/update Project N.O.M.A.D. and its dependencies on your machine. Are you sure you want to continue? (y/N): " choice
+  echo -e "${YELLOW}#${RESET} This script will install Project N.O.M.A.D. and its dependencies on your machine."
+  echo -e "${YELLOW}#${RESET} If you already have Project N.O.M.A.D. installed with customized config or data, please be aware that running this installation script may overwrite existing files and configurations. It is highly recommended to back up any important data/configs before proceeding."
+  read -p "Are you sure you want to continue? (y/N): " choice
   case "$choice" in
     y|Y )
       echo -e "${GREEN}#${RESET} User chose to continue with the installation."
@@ -380,12 +398,6 @@ create_nomad_directory(){
   sudo touch "${NOMAD_DIR}/storage/logs/admin.log"
 }
 
-create_disk_info_file() {
-  # Disk info file MUST be created before the admin container starts.
-  # Otherwise, Docker will assume we meant to mount a directory and will create an empty directory at the mount point
-  echo '{}' > /tmp/nomad-disk-info.json
-}
-
 download_management_compose_file() {
   local compose_file_path="${NOMAD_DIR}/compose.yml"
 
@@ -400,6 +412,15 @@ download_management_compose_file() {
   local db_root_password=$(generateRandomPass)
   local db_user_password=$(generateRandomPass)
 
+  # If MySQL data directory exists from a previous install attempt, remove it.
+  # MySQL only initializes credentials on first startup when the data dir is empty.
+  # If stale data exists, MySQL ignores the new passwords above and uses the old ones,
+  # causing "Access denied" errors when the admin container tries to connect.
+  if [[ -d "${NOMAD_DIR}/mysql" ]]; then
+    echo -e "${YELLOW}#${RESET} Removing existing MySQL data directory to ensure credentials match...\\n"
+    sudo rm -rf "${NOMAD_DIR}/mysql"
+  fi
+
   # Inject dynamic env values into the compose file
   echo -e "${YELLOW}#${RESET} Configuring docker-compose file env variables...\\n"
   sed -i "s|URL=replaceme|URL=http://${local_ip_address}:8080|g" "$compose_file_path"
@@ -410,18 +431,6 @@ download_management_compose_file() {
   sed -i "s|MYSQL_PASSWORD=replaceme|MYSQL_PASSWORD=${db_user_password}|g" "$compose_file_path"
   
   echo -e "${GREEN}#${RESET} Docker compose file configured successfully.\\n"
-}
-
-download_wait_for_it_script() {
-  local wait_for_it_script_path="${NOMAD_DIR}/wait-for-it.sh"
-
-  echo -e "${YELLOW}#${RESET} Downloading wait-for-it script...\\n"
-  if ! curl -fsSL "$WAIT_FOR_IT_SCRIPT_URL" -o "$wait_for_it_script_path"; then
-    echo -e "${RED}#${RESET} Failed to download the wait-for-it script. Please check the URL and try again."
-    exit 1
-  fi
-  chmod +x "$wait_for_it_script_path"
-  echo -e "${GREEN}#${RESET} wait-for-it script downloaded successfully to $wait_for_it_script_path.\\n"
 }
 
 download_entrypoint_script() {
@@ -555,7 +564,7 @@ verify_gpu_setup() {
   fi
   
   # Check if Docker has NVIDIA runtime
-  if docker info 2>/dev/null | grep -q \"nvidia\"; then
+  if docker info 2>/dev/null | grep -q "nvidia"; then
     echo -e "${GREEN}✓${RESET} Docker NVIDIA runtime configured\\n"
   else
     echo -e "${YELLOW}○${RESET} Docker NVIDIA runtime not detected\\n"
@@ -571,11 +580,11 @@ verify_gpu_setup() {
   echo -e "${YELLOW}===========================================${RESET}\\n"
   
   # Summary
-  if command -v nvidia-smi &> /dev/null && docker info 2>/dev/null | grep -q \"nvidia\"; then
+  if command -v nvidia-smi &> /dev/null && docker info 2>/dev/null | grep -q "nvidia"; then
     echo -e "${GREEN}#${RESET} GPU acceleration is properly configured! The AI Assistant will use your GPU.\\n"
   else
     echo -e "${YELLOW}#${RESET} GPU acceleration not detected. The AI Assistant will run in CPU-only mode.\\n"
-    if command -v nvidia-smi &> /dev/null && ! docker info 2>/dev/null | grep -q \"nvidia\"; then
+    if command -v nvidia-smi &> /dev/null && ! docker info 2>/dev/null | grep -q "nvidia"; then
       echo -e "${YELLOW}#${RESET} Tip: Your GPU is detected but Docker runtime is not configured.\\n"
       echo -e "${YELLOW}#${RESET} Try restarting Docker: ${WHITE_R}sudo systemctl restart docker${RESET}\\n"
     fi
@@ -607,14 +616,11 @@ check_is_debug_mode
 get_install_confirmation
 accept_terms
 ensure_docker_installed
+check_docker_compose
 setup_nvidia_container_toolkit
 get_local_ip
 create_nomad_directory
-download_wait_for_it_script
-download_entrypoint_script
-download_sidecar_files
 download_helper_scripts
-download_and_start_collect_disk_info_script
 download_management_compose_file
 start_management_containers
 verify_gpu_setup

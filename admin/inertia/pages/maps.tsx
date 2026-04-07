@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import MapsLayout from '~/layouts/MapsLayout'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import MapComponent from '~/components/maps/MapComponent'
 import DirectionsPanel from '~/components/maps/DirectionsPanel'
 import StyledButton from '~/components/StyledButton'
@@ -50,12 +50,11 @@ export default function Maps(props: {
     <MapsLayout>
       <Head title="Maps" />
       <div className="relative w-full h-screen overflow-hidden">
-
         {/* Nav bar — overlaid at the top */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex justify-between p-4 bg-gray-50 backdrop-blur-sm shadow-sm print:hidden">
+        <div className="absolute top-0 left-0 right-0 z-50 flex justify-between p-4 bg-surface-secondary backdrop-blur-sm shadow-sm print:hidden">
           <Link href="/home" className="flex items-center">
             <IconArrowLeft className="mr-2" size={24} />
-            <p className="text-lg text-gray-600">Back to Home</p>
+            <p className="text-lg text-text-secondary">Back to Home</p>
           </Link>
           <div className="flex items-center gap-3 mr-4">
             <StyledButton
@@ -85,9 +84,7 @@ export default function Maps(props: {
                 variant: 'secondary',
                 children: 'Go to Map Settings',
                 icon: 'IconSettings',
-                onClick: () => {
-                  window.location.href = '/settings/maps'
-                },
+                onClick: () => router.visit('/settings/maps'),
               }}
             />
           </div>

@@ -54,6 +54,16 @@ ensure_docker_installed() {
   fi
 }
 
+check_docker_compose() {
+  # Check if 'docker compose' (v2 plugin) is available
+  if ! docker compose version &>/dev/null; then
+    echo -e "${RED}#${RESET} Docker Compose v2 is not installed or not available as a Docker plugin."
+    echo -e "${YELLOW}#${RESET} This script requires 'docker compose' (v2), not 'docker-compose' (v1)."
+    echo -e "${YELLOW}#${RESET} Please read the Docker documentation at https://docs.docker.com/compose/install/ for instructions on how to install Docker Compose v2."
+    exit 1
+  fi
+}
+
 get_uninstall_confirmation() {
   echo ""
   echo -e "${RED}WARNING:${RESET} This will permanently remove all Project N.O.M.A.D. containers,"
@@ -147,6 +157,7 @@ storage_cleanup() {
 check_has_sudo
 check_current_directory
 ensure_docker_installed
+check_docker_compose
 get_uninstall_confirmation
 
 stop_disk_info_collector
