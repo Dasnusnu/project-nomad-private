@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
-# dev-update.sh — Build from source and hot-swap the admin container.
+# dev-update.sh — Pull latest image (or build from source) and hot-swap the admin container.
 #
-# Use this to test local code changes without a full reinstall or image push.
+# Tries to pull the latest image from ghcr.io first. If the pull fails
+# (no network, auth error, etc.) it falls back to a full local build.
 # MySQL, Redis, Dozzle, and the updater sidecar are left running; only the
 # admin container is replaced.
 #
 # Usage:
-#   bash install/dev-update.sh
+#   bash install/dev-update.sh           # Pull from registry, fall back to local build
+#   bash install/dev-update.sh --build   # Skip pull, force a local build
 #   NOMAD_COMPOSE_FILE=/path/to/compose.yml bash install/dev-update.sh
 #
 # =============================================================================
@@ -85,26 +87,47 @@ if [[ ! -f "$DISK_INFO_FILE" ]]; then
   info "Created $DISK_INFO_FILE"
 fi
 
+REGISTRY_IMAGE="ghcr.io/dasnusnu/project-nomad-private:latest"
+FORCE_BUILD=false
+for arg in "$@"; do
+  [[ "$arg" == "--build" ]] && FORCE_BUILD=true
+done
+
 info "Repo root:    $REPO_ROOT"
 info "Compose file: $COMPOSE_FILE"
 info "Dev image:    $DEV_IMAGE"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Build
+# Pull from registry (fall back to local build if pull fails or --build set)
 # ---------------------------------------------------------------------------
 
-step "Building image from source..."
 BUILD_START=$(date +%s)
 
-# --no-cache ensures the TypeScript build stage always runs with the latest
-# source files. Docker's layer cache for ADD/COPY can falsely reuse a prior
-# build layer when files are added or removed (not just modified), causing the
-# compiled image to silently omit new code.
-docker build --no-cache -t "$DEV_IMAGE" "$REPO_ROOT"
-
-BUILD_END=$(date +%s)
-info "Build complete in $((BUILD_END - BUILD_START))s."
+if [[ "$FORCE_BUILD" == "true" ]]; then
+  step "Building image from source (--build flag set)..."
+  # --no-cache-filter=build skips cache only for the TypeScript compile stage,
+  # so apt packages and npm ci stay cached between builds (much faster).
+  docker build --no-cache-filter=build -t "$DEV_IMAGE" "$REPO_ROOT"
+  BUILD_END=$(date +%s)
+  info "Build complete in $((BUILD_END - BUILD_START))s."
+else
+  step "Attempting to pull latest image from registry..."
+  if docker pull "$REGISTRY_IMAGE" 2>&1; then
+    docker tag "$REGISTRY_IMAGE" "$DEV_IMAGE"
+    BUILD_END=$(date +%s)
+    info "Pull complete in $((BUILD_END - BUILD_START))s."
+  else
+    warn "Registry pull failed — falling back to local build..."
+    echo ""
+    step "Building image from source..."
+    # --no-cache-filter=build skips cache only for the TypeScript compile stage,
+    # so apt packages and npm ci stay cached between builds (much faster).
+    docker build --no-cache-filter=build -t "$DEV_IMAGE" "$REPO_ROOT"
+    BUILD_END=$(date +%s)
+    info "Build complete in $((BUILD_END - BUILD_START))s."
+  fi
+fi
 echo ""
 
 # ---------------------------------------------------------------------------
